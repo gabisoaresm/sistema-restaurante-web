@@ -1,0 +1,9 @@
+# Ambiente virtual
+venv/
+
+# Banco de dados SQLite
+db.sqlite3
+
+# Cache do Python
+__pycache__/
+*.pyc
