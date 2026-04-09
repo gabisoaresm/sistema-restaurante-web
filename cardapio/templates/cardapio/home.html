@@ -1,0 +1,36 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Restaurante — Home{% endblock %}
+
+{% block conteudo %}
+<div class="row mt-3">
+    <div class="col-12">
+        <h1>Bem-vindo ao Restaurante</h1>
+        <p class="lead">Selecione uma opção para continuar:</p>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <!-- Card de Categorias -->
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Categorias</h5>
+                <p class="card-text">Gerencie as categorias do cardápio.</p>
+                <a href="{% url 'cardapio:lista-categorias' %}" class="btn btn-primary">Ver Categorias</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card de Cardápio (ativado na Etapa 3B) -->
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Cardápio</h5>
+                <p class="card-text">Consulte os itens disponíveis.</p>
+                <a href="#" class="btn btn-secondary disabled">Ver Cardápio</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

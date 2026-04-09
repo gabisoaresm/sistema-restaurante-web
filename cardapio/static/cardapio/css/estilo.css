@@ -1,0 +1,23 @@
+/* Estilo personalizado do sistema de pedidos do restaurante */
+
+/* Alinha os rótulos dos formulários à direita e ao topo */
+.formulario th {
+    text-align: right;
+    vertical-align: top;
+    padding-right: 8px;
+    padding-top: 6px;
+}
+
+/* Mensagens de erro nos formulários */
+.errorlist {
+    color: red;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Texto de ajuda dos campos do formulário */
+.helptext {
+    font-size: 10px;
+    color: #666;
+}

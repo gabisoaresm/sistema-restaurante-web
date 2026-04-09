@@ -1,0 +1,22 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Excluir Categoria{% endblock %}
+
+{% block conteudo %}
+<div class="card border-danger" style="max-width: 500px;">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Confirmar Exclusão</h5>
+    </div>
+    <div class="card-body">
+        <p>Tem certeza que deseja remover a categoria <strong>{{ categoria.nome }}</strong>?</p>
+        <p class="text-muted small">Esta ação não pode ser desfeita.</p>
+
+        <!-- Confirmação via POST (sem JavaScript) -->
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Remover</button>
+            <a href="{% url 'cardapio:lista-categorias' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Nova Categoria{% endblock %}
+
+{% block conteudo %}
+<h2>Nova Categoria</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <table class="formulario">
+        {{ formulario.as_table }}
+    </table>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{% url 'cardapio:lista-categorias' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}
