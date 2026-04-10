@@ -1,0 +1,18 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Editar Item do Cardápio{% endblock %}
+
+{% block conteudo %}
+<h2>Editar Item: {{ item.nome }}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <table class="formulario">
+        {{ formulario.as_table }}
+    </table>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-warning">Salvar Alterações</button>
+        <a href="{% url 'cardapio:lista-itens' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

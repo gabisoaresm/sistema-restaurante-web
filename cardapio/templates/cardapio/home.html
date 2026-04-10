@@ -22,13 +22,13 @@
         </div>
     </div>
 
-    <!-- Card de Cardápio (ativado na Etapa 3B) -->
+    <!-- Card de Cardápio -->
     <div class="col-md-4 mb-3">
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Cardápio</h5>
                 <p class="card-text">Consulte os itens disponíveis.</p>
-                <a href="#" class="btn btn-secondary disabled">Ver Cardápio</a>
+                <a href="{% url 'cardapio:lista-itens' %}" class="btn btn-primary">Ver Cardápio</a>
             </div>
         </div>
     </div>
