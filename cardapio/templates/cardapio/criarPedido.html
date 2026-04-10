@@ -1,0 +1,67 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Novo Pedido{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4">Fazer Pedido</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if erro %}
+        <div class="alert alert-danger">{{ erro }}</div>
+    {% endif %}
+
+    <!-- Itens disponíveis agrupados por categoria -->
+    {% for categoria in categorias %}
+        {% if categoria.itens_disponiveis %}
+        <h5 class="mt-4 mb-2">{{ categoria.nome }}</h5>
+        <table class="table table-bordered table-sm mb-3">
+            <thead class="table-light">
+                <tr>
+                    <th>Item</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th style="width: 110px;">Quantidade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in categoria.itens_disponiveis %}
+                <tr>
+                    <td>{{ item.nome }}</td>
+                    <td class="text-muted small">{{ item.descricao }}</td>
+                    <td>R$ {{ item.preco }}</td>
+                    <td>
+                        <!-- Campo nomeado "item_ID" — a view lê o prefixo "item_" para identificar o item -->
+                        <input type="number"
+                               name="item_{{ item.pk }}"
+                               min="0"
+                               value="0"
+                               class="form-control form-control-sm">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    {% empty %}
+        <p class="text-muted">Nenhum item disponível no momento.</p>
+    {% endfor %}
+
+    <!-- Campo de observações -->
+    <div class="mt-4 mb-3">
+        <label for="id_observacoes" class="form-label fw-bold">{{ formulario.observacoes.label }}</label>
+        {{ formulario.observacoes }}
+        {% if formulario.observacoes.errors %}
+            <ul class="errorlist">
+                {% for erro in formulario.observacoes.errors %}
+                    <li>{{ erro }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Confirmar Pedido</button>
+    <a href="{% url 'cardapio:meus-pedidos' %}" class="btn btn-secondary ms-2">Cancelar</a>
+</form>
+{% endblock %}

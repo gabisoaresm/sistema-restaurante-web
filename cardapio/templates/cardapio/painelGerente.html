@@ -1,0 +1,82 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Painel de Pedidos{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-3">Painel de Pedidos</h2>
+
+<!-- Filtros: status (links) + data (form GET) -->
+<div class="mb-4 d-flex flex-wrap align-items-center gap-2">
+
+    <!-- Filtro por status via links -->
+    <div>
+        <strong>Status:</strong>
+        <a href="{% url 'cardapio:painel-gerente' %}{% if data_filtro %}?data={{ data_filtro }}{% endif %}"
+           class="btn btn-sm ms-1 {% if not status_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            Todos
+        </a>
+        {% for valor, rotulo in status_choices %}
+        <a href="{% url 'cardapio:painel-gerente' %}?status={{ valor }}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
+           class="btn btn-sm ms-1 {% if status_filtro == valor %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            {{ rotulo }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Filtro por data via form GET -->
+    <form method="get" action="{% url 'cardapio:painel-gerente' %}" class="d-flex align-items-center gap-2 ms-3">
+        {% if status_filtro %}
+            <input type="hidden" name="status" value="{{ status_filtro }}">
+        {% endif %}
+        <label for="data" class="mb-0"><strong>Data:</strong></label>
+        <input type="date" id="data" name="data" value="{{ data_filtro }}" class="form-control form-control-sm" style="width: auto;">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+        {% if data_filtro %}
+        <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}"
+           class="btn btn-sm btn-outline-danger">✕ Limpar data</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Tabela de pedidos -->
+<table class="table table-striped table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Data/Hora</th>
+            <th>Cliente</th>
+            <th>Status</th>
+            <th class="text-center">Qtd itens</th>
+            <th class="text-end">Total</th>
+            <th>Observações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pedidos %}
+        <tr>
+            <td>{{ p.pedido.pk }}</td>
+            <td>{{ p.pedido.data_hora|date:"d/m/Y H:i" }}</td>
+            <td>{{ p.pedido.cliente.username }}</td>
+            <td>
+                {% if p.pedido.status == 'recebido' %}
+                    <span class="badge bg-primary">{{ p.pedido.get_status_display }}</span>
+                {% elif p.pedido.status == 'em_preparo' %}
+                    <span class="badge bg-warning text-dark">{{ p.pedido.get_status_display }}</span>
+                {% elif p.pedido.status == 'pronto' %}
+                    <span class="badge bg-success">{{ p.pedido.get_status_display }}</span>
+                {% elif p.pedido.status == 'entregue' %}
+                    <span class="badge bg-secondary">{{ p.pedido.get_status_display }}</span>
+                {% endif %}
+            </td>
+            <td class="text-center">{{ p.pedido.itens.count }}</td>
+            <td class="text-end">R$ {{ p.total }}</td>
+            <td class="text-muted small">{{ p.pedido.observacoes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">Nenhum pedido encontrado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

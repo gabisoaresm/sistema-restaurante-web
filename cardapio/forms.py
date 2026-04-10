@@ -2,7 +2,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Categoria, ItemCardapio
+from .models import Categoria, ItemCardapio, Pedido
 
 
 class CategoriaForm(forms.ModelForm):
@@ -17,6 +17,20 @@ class ItemCardapioForm(forms.ModelForm):
     class Meta:
         model = ItemCardapio
         fields = '__all__'
+
+
+class PedidoForm(forms.ModelForm):
+    """Formulário para criação de pedido — apenas observações; cliente e status são preenchidos na view."""
+    class Meta:
+        model = Pedido
+        fields = ['observacoes']
+        widgets = {
+            # Textarea menor para melhor layout
+            'observacoes': forms.Textarea(attrs={'rows': 3}),
+        }
+        labels = {
+            'observacoes': 'Observações (opcional)',
+        }
 
 
 class RegistroForm(UserCreationForm):

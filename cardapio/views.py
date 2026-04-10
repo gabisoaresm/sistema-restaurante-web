@@ -5,8 +5,10 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 
-from .models import Categoria, ItemCardapio, Perfil
-from .forms import CategoriaForm, ItemCardapioForm, RegistroForm
+from django.db.models import Prefetch
+
+from .models import Categoria, ItemCardapio, Perfil, Pedido, ItemPedido
+from .forms import CategoriaForm, ItemCardapioForm, RegistroForm, PedidoForm
 
 
 # ──────────────────────────────────────────────
@@ -30,6 +32,26 @@ class GerenteMixin:
     def dispatch(self, request, *args, **kwargs):
         # Verifica se existe perfil e se é do tipo gerente
         if not hasattr(request.user, 'perfil') or request.user.perfil.tipo != 'gerente':
+            return HttpResponseRedirect(reverse_lazy('cardapio:home'))
+        return super().dispatch(request, *args, **kwargs)
+
+
+class AtendenteMixin:
+    """Redireciona para a home se o usuário logado não for atendente."""
+
+    def dispatch(self, request, *args, **kwargs):
+        # Verifica se existe perfil e se é do tipo atendente
+        if not hasattr(request.user, 'perfil') or request.user.perfil.tipo != 'atendente':
+            return HttpResponseRedirect(reverse_lazy('cardapio:home'))
+        return super().dispatch(request, *args, **kwargs)
+
+
+class ClienteMixin:
+    """Redireciona para a home se o usuário logado não for cliente."""
+
+    def dispatch(self, request, *args, **kwargs):
+        # Verifica se existe perfil e se é do tipo cliente
+        if not hasattr(request.user, 'perfil') or request.user.perfil.tipo != 'cliente':
             return HttpResponseRedirect(reverse_lazy('cardapio:home'))
         return super().dispatch(request, *args, **kwargs)
 
@@ -201,3 +223,188 @@ class LogoutConfirmView(View):
 
     def get(self, request):
         return render(request, 'cardapio/logout_confirma.html')
+
+
+# ──────────────────────────────────────────────
+# Pedidos do cliente
+# ──────────────────────────────────────────────
+
+class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
+    """Exibe o cardápio disponível e cria um novo pedido para o cliente."""
+
+    def get(self, request):
+        # Categorias com seus itens disponíveis pré-carregados (evita N+1 queries)
+        categorias = Categoria.objects.prefetch_related(
+            Prefetch(
+                'itemcardapio_set',
+                queryset=ItemCardapio.objects.filter(disponivel=True),
+                to_attr='itens_disponiveis',
+            )
+        )
+        formulario = PedidoForm()
+        return render(request, 'cardapio/criarPedido.html', {
+            'categorias': categorias,
+            'formulario': formulario,
+        })
+
+    def post(self, request):
+        formulario = PedidoForm(request.POST)
+
+        # Coleta os itens selecionados: campos cujo nome começa com "item_"
+        itens_pedido = []
+        for chave, valor in request.POST.items():
+            if chave.startswith('item_'):
+                try:
+                    item_id = int(chave[5:])   # remove o prefixo "item_"
+                    quantidade = int(valor)
+                    if quantidade > 0:
+                        item = ItemCardapio.objects.get(pk=item_id, disponivel=True)
+                        itens_pedido.append((item, quantidade))
+                except (ValueError, ItemCardapio.DoesNotExist):
+                    pass  # ignora campos inválidos ou itens indisponíveis
+
+        if not itens_pedido:
+            # Nenhum item selecionado: reexibe o formulário com aviso
+            categorias = Categoria.objects.prefetch_related(
+                Prefetch(
+                    'itemcardapio_set',
+                    queryset=ItemCardapio.objects.filter(disponivel=True),
+                    to_attr='itens_disponiveis',
+                )
+            )
+            return render(request, 'cardapio/criarPedido.html', {
+                'categorias': categorias,
+                'formulario': formulario,
+                'erro': 'Selecione pelo menos um item com quantidade maior que zero.',
+            })
+
+        if formulario.is_valid():
+            # Cria o pedido vinculado ao cliente logado
+            pedido = Pedido.objects.create(
+                cliente=request.user,
+                status='recebido',
+                observacoes=formulario.cleaned_data.get('observacoes') or '',
+            )
+            # Cria um ItemPedido para cada item selecionado
+            for item, quantidade in itens_pedido:
+                ItemPedido.objects.create(pedido=pedido, item=item, quantidade=quantidade)
+
+            return HttpResponseRedirect(reverse_lazy('cardapio:meus-pedidos'))
+
+        # Formulário inválido: reexibe com erros
+        categorias = Categoria.objects.prefetch_related(
+            Prefetch(
+                'itemcardapio_set',
+                queryset=ItemCardapio.objects.filter(disponivel=True),
+                to_attr='itens_disponiveis',
+            )
+        )
+        return render(request, 'cardapio/criarPedido.html', {
+            'categorias': categorias,
+            'formulario': formulario,
+        })
+
+
+class MeusPedidosView(LoginRequiredMixin, ClienteMixin, View):
+    """Lista os pedidos do cliente logado com seus itens e totais."""
+
+    def get(self, request):
+        # Busca os pedidos do cliente com itens pré-carregados (evita N+1 queries)
+        pedidos_qs = Pedido.objects.filter(cliente=request.user).prefetch_related(
+            'itens__item'
+        )
+
+        # Calcula subtotal por item e total do pedido na view (templates não fazem multiplicação)
+        pedidos = []
+        for pedido in pedidos_qs:
+            itens_com_subtotal = []
+            total = 0
+            for ip in pedido.itens.all():
+                subtotal = ip.quantidade * ip.item.preco
+                total += subtotal
+                itens_com_subtotal.append({'ip': ip, 'subtotal': subtotal})
+            pedidos.append({'pedido': pedido, 'itens': itens_com_subtotal, 'total': total})
+
+        return render(request, 'cardapio/meusPedidos.html', {'pedidos': pedidos})
+
+
+# ──────────────────────────────────────────────
+# Fila de pedidos do atendente
+# ──────────────────────────────────────────────
+
+class FilaPedidosView(LoginRequiredMixin, AtendenteMixin, View):
+    """Exibe os pedidos pendentes para o atendente, com filtro opcional por status."""
+
+    # Status disponíveis para filtro — espelha o modelo Pedido
+    STATUS_CHOICES = Pedido.STATUS_CHOICES
+
+    def get(self, request):
+        # Filtro opcional por status via query string (?status=VALOR)
+        status_filtro = request.GET.get('status')
+
+        if status_filtro:
+            pedidos_qs = Pedido.objects.filter(status=status_filtro)
+        else:
+            # Padrão: exibe todos os pedidos que ainda não foram entregues
+            pedidos_qs = Pedido.objects.exclude(status='entregue')
+
+        # Pré-carrega os itens de cada pedido (evita N+1 queries)
+        pedidos_qs = pedidos_qs.prefetch_related('itens__item')
+
+        return render(request, 'cardapio/filaPedidos.html', {
+            'pedidos': pedidos_qs,
+            'status_choices': self.STATUS_CHOICES,
+            'status_filtro': status_filtro,
+        })
+
+
+class AtualizarStatusPedidoView(LoginRequiredMixin, AtendenteMixin, View):
+    """Recebe POST com novo status e atualiza o pedido. Redireciona para a fila."""
+
+    # Status válidos — evita gravar valores arbitrários do POST
+    STATUS_VALIDOS = {choice[0] for choice in Pedido.STATUS_CHOICES}
+
+    def post(self, request, pk):
+        pedido = get_object_or_404(Pedido, pk=pk)
+        novo_status = request.POST.get('status')
+
+        # Só atualiza se o valor recebido for um status válido
+        if novo_status in self.STATUS_VALIDOS:
+            pedido.status = novo_status
+            pedido.save()
+
+        return HttpResponseRedirect(reverse_lazy('cardapio:fila-pedidos'))
+
+
+# ──────────────────────────────────────────────
+# Painel de pedidos do gerente
+# ──────────────────────────────────────────────
+
+class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
+    """Exibe todos os pedidos para o gerente, com filtros por status e data."""
+
+    def get(self, request):
+        pedidos_qs = Pedido.objects.prefetch_related('itens__item').select_related('cliente')
+
+        # Filtro por status via query string (?status=VALOR)
+        status_filtro = request.GET.get('status')
+        if status_filtro:
+            pedidos_qs = pedidos_qs.filter(status=status_filtro)
+
+        # Filtro por data via query string (?data=AAAA-MM-DD)
+        data_filtro = request.GET.get('data')
+        if data_filtro:
+            pedidos_qs = pedidos_qs.filter(data_hora__date=data_filtro)
+
+        # Calcula o total de cada pedido na view (templates não fazem multiplicação)
+        pedidos = []
+        for pedido in pedidos_qs:
+            total = sum(ip.quantidade * ip.item.preco for ip in pedido.itens.all())
+            pedidos.append({'pedido': pedido, 'total': total})
+
+        return render(request, 'cardapio/painelGerente.html', {
+            'pedidos': pedidos,
+            'status_choices': Pedido.STATUS_CHOICES,
+            'status_filtro': status_filtro,
+            'data_filtro': data_filtro or '',
+        })

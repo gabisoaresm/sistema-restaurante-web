@@ -1,0 +1,65 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Meus Pedidos{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Meus Pedidos</h2>
+    <a href="{% url 'cardapio:criar-pedido' %}" class="btn btn-success">+ Novo Pedido</a>
+</div>
+
+{% for p in pedidos %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><strong>Pedido #{{ p.pedido.pk }}</strong> — {{ p.pedido.data_hora|date:"d/m/Y H:i" }}</span>
+
+        <!-- Badge de status com cor por etapa -->
+        {% if p.pedido.status == 'recebido' %}
+            <span class="badge bg-primary">{{ p.pedido.get_status_display }}</span>
+        {% elif p.pedido.status == 'em_preparo' %}
+            <span class="badge bg-warning text-dark">{{ p.pedido.get_status_display }}</span>
+        {% elif p.pedido.status == 'pronto' %}
+            <span class="badge bg-success">{{ p.pedido.get_status_display }}</span>
+        {% elif p.pedido.status == 'entregue' %}
+            <span class="badge bg-secondary">{{ p.pedido.get_status_display }}</span>
+        {% endif %}
+    </div>
+
+    <div class="card-body">
+        {% if p.pedido.observacoes %}
+            <p class="text-muted mb-3"><em>Observações: {{ p.pedido.observacoes }}</em></p>
+        {% endif %}
+
+        <!-- Itens do pedido -->
+        <table class="table table-sm table-bordered mb-2">
+            <thead class="table-light">
+                <tr>
+                    <th>Item</th>
+                    <th class="text-center" style="width: 90px;">Qtd</th>
+                    <th class="text-end" style="width: 110px;">Preço unit.</th>
+                    <th class="text-end" style="width: 110px;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entrada in p.itens %}
+                <tr>
+                    <td>{{ entrada.ip.item.nome }}</td>
+                    <td class="text-center">{{ entrada.ip.quantidade }}</td>
+                    <td class="text-end">R$ {{ entrada.ip.item.preco }}</td>
+                    <td class="text-end">R$ {{ entrada.subtotal }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-light fw-bold">
+                    <td colspan="3" class="text-end">Total:</td>
+                    <td class="text-end">R$ {{ p.total }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% empty %}
+<p class="text-muted">Você ainda não fez nenhum pedido. <a href="{% url 'cardapio:criar-pedido' %}">Fazer pedido agora</a>.</p>
+{% endfor %}
+{% endblock %}

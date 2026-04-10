@@ -7,16 +7,18 @@
 
             {% if user.is_authenticated %}
                 {% if user.perfil.tipo == 'gerente' %}
-                    <!-- Gerente: acesso completo ao CRUD -->
+                    <!-- Gerente: acesso completo ao CRUD + painel de pedidos -->
                     <a class="nav-link" href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
                     <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+                    <a class="nav-link" href="{% url 'cardapio:painel-gerente' %}">Painel de Pedidos</a>
                 {% elif user.perfil.tipo == 'atendente' %}
-                    <!-- Atendente: fila de pedidos (implementar na Etapa 5) -->
-                    <a class="nav-link" href="#">Fila de Pedidos</a>
+                    <!-- Atendente: fila de pedidos -->
+                    <a class="nav-link" href="{% url 'cardapio:fila-pedidos' %}">Fila de Pedidos</a>
                 {% elif user.perfil.tipo == 'cliente' %}
                     <!-- Cliente: visualização do cardápio e pedidos próprios -->
                     <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
-                    <a class="nav-link" href="#">Meus Pedidos</a>
+                    <a class="nav-link" href="{% url 'cardapio:criar-pedido' %}">Novo Pedido</a>
+                    <a class="nav-link" href="{% url 'cardapio:meus-pedidos' %}">Meus Pedidos</a>
                 {% endif %}
             {% endif %}
         </div>

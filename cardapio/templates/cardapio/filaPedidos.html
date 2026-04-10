@@ -1,0 +1,73 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Fila de Pedidos{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-3">Fila de Pedidos</h2>
+
+<!-- Links de filtro por status -->
+<div class="mb-4">
+    <strong>Filtrar:</strong>
+    <a href="{% url 'cardapio:fila-pedidos' %}"
+       class="btn btn-sm ms-1 {% if not status_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">
+        Pendentes
+    </a>
+    {% for valor, rotulo in status_choices %}
+    <a href="{% url 'cardapio:fila-pedidos' %}?status={{ valor }}"
+       class="btn btn-sm ms-1 {% if status_filtro == valor %}btn-dark{% else %}btn-outline-dark{% endif %}">
+        {{ rotulo }}
+    </a>
+    {% endfor %}
+</div>
+
+{% for pedido in pedidos %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            <strong>Pedido #{{ pedido.pk }}</strong>
+            — Cliente: {{ pedido.cliente.username }}
+            — {{ pedido.data_hora|date:"d/m/Y H:i" }}
+        </span>
+
+        <!-- Badge de status com cor por etapa -->
+        {% if pedido.status == 'recebido' %}
+            <span class="badge bg-primary">{{ pedido.get_status_display }}</span>
+        {% elif pedido.status == 'em_preparo' %}
+            <span class="badge bg-warning text-dark">{{ pedido.get_status_display }}</span>
+        {% elif pedido.status == 'pronto' %}
+            <span class="badge bg-success">{{ pedido.get_status_display }}</span>
+        {% elif pedido.status == 'entregue' %}
+            <span class="badge bg-secondary">{{ pedido.get_status_display }}</span>
+        {% endif %}
+    </div>
+
+    <div class="card-body">
+        {% if pedido.observacoes %}
+            <p class="text-muted mb-2"><em>Obs: {{ pedido.observacoes }}</em></p>
+        {% endif %}
+
+        <!-- Itens do pedido -->
+        <ul class="list-unstyled mb-3">
+            {% for ip in pedido.itens.all %}
+                <li>{{ ip.quantidade }}× {{ ip.item.nome }}</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Formulário inline para atualizar o status -->
+        <form method="post" action="{% url 'cardapio:atualizar-status' pedido.pk %}" class="d-flex align-items-center gap-2">
+            {% csrf_token %}
+            <select name="status" class="form-select form-select-sm" style="width: auto;">
+                {% for valor, rotulo in status_choices %}
+                    <option value="{{ valor }}" {% if pedido.status == valor %}selected{% endif %}>
+                        {{ rotulo }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Atualizar</button>
+        </form>
+    </div>
+</div>
+{% empty %}
+<p class="text-muted">Nenhum pedido encontrado para o filtro selecionado.</p>
+{% endfor %}
+{% endblock %}
