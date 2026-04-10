@@ -5,7 +5,9 @@
 {% block conteudo %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Cardápio</h2>
-    <a href="{% url 'cardapio:cria-item' %}" class="btn btn-success">+ Novo Item</a>
+    {% if user.perfil.tipo == 'gerente' %}
+        <a href="{% url 'cardapio:cria-item' %}" class="btn btn-success">+ Novo Item</a>
+    {% endif %}
 </div>
 
 <!-- Links de filtro por categoria -->
@@ -31,7 +33,9 @@
             <th>Categoria</th>
             <th>Preço</th>
             <th>Disponível</th>
-            <th style="width: 180px;">Ações</th>
+            {% if user.perfil.tipo == 'gerente' %}
+                <th style="width: 180px;">Ações</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -47,14 +51,16 @@
                     <span class="badge bg-secondary">Não</span>
                 {% endif %}
             </td>
+            {% if user.perfil.tipo == 'gerente' %}
             <td>
                 <a href="{% url 'cardapio:atualiza-item' item.pk %}" class="btn btn-sm btn-warning">Editar</a>
                 <a href="{% url 'cardapio:apaga-item' item.pk %}" class="btn btn-sm btn-danger">Excluir</a>
             </td>
+            {% endif %}
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5" class="text-center text-muted">Nenhum item encontrado.</td>
+            <td colspan="{% if user.perfil.tipo == 'gerente' %}5{% else %}4{% endif %}" class="text-center text-muted">Nenhum item encontrado.</td>
         </tr>
         {% endfor %}
     </tbody>

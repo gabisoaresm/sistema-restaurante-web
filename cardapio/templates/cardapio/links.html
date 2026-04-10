@@ -2,10 +2,36 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="{% url 'cardapio:home' %}">🍽 Restaurante</a>
-        <div class="navbar-nav">
+        <div class="navbar-nav me-auto">
             <a class="nav-link" href="{% url 'cardapio:home' %}">Home</a>
-            <a class="nav-link" href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
-            <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+
+            {% if user.is_authenticated %}
+                {% if user.perfil.tipo == 'gerente' %}
+                    <!-- Gerente: acesso completo ao CRUD -->
+                    <a class="nav-link" href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
+                    <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+                {% elif user.perfil.tipo == 'atendente' %}
+                    <!-- Atendente: fila de pedidos (implementar na Etapa 5) -->
+                    <a class="nav-link" href="#">Fila de Pedidos</a>
+                {% elif user.perfil.tipo == 'cliente' %}
+                    <!-- Cliente: visualização do cardápio e pedidos próprios -->
+                    <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+                    <a class="nav-link" href="#">Meus Pedidos</a>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Menu de autenticação -->
+        <div class="navbar-nav ms-auto">
+            {% if user.is_authenticated %}
+                <span class="nav-link text-light">
+                    Olá, {% firstof user.username "visitante" %}
+                </span>
+                <a class="nav-link" href="{% url 'logout-confirma' %}">Sair</a>
+            {% else %}
+                <a class="nav-link" href="{% url 'login' %}">Login</a>
+                <a class="nav-link" href="{% url 'registro' %}">Registrar</a>
+            {% endif %}
         </div>
     </div>
 </nav>

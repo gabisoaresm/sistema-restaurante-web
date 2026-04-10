@@ -1,11 +1,12 @@
 # Views do app cardapio — padrão da aula: classes que estendem View
 from django.views.generic.base import View
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 
-from .models import Categoria, ItemCardapio
-from .forms import CategoriaForm, ItemCardapioForm
+from .models import Categoria, ItemCardapio, Perfil
+from .forms import CategoriaForm, ItemCardapioForm, RegistroForm
 
 
 # ──────────────────────────────────────────────
@@ -20,10 +21,24 @@ class HomeView(View):
 
 
 # ──────────────────────────────────────────────
+# Mixin de autorização por perfil
+# ──────────────────────────────────────────────
+
+class GerenteMixin:
+    """Redireciona para a home se o usuário logado não for gerente."""
+
+    def dispatch(self, request, *args, **kwargs):
+        # Verifica se existe perfil e se é do tipo gerente
+        if not hasattr(request.user, 'perfil') or request.user.perfil.tipo != 'gerente':
+            return HttpResponseRedirect(reverse_lazy('cardapio:home'))
+        return super().dispatch(request, *args, **kwargs)
+
+
+# ──────────────────────────────────────────────
 # CRUD de Categoria
 # ──────────────────────────────────────────────
 
-class CategoriaListView(View):
+class CategoriaListView(LoginRequiredMixin, View):
     """Lista todas as categorias do cardápio."""
 
     def get(self, request):
@@ -31,7 +46,7 @@ class CategoriaListView(View):
         return render(request, 'cardapio/listaCategoria.html', {'categorias': categorias})
 
 
-class CategoriaCreateView(View):
+class CategoriaCreateView(LoginRequiredMixin, GerenteMixin, View):
     """Exibe formulário vazio e salva nova categoria."""
 
     def get(self, request):
@@ -48,7 +63,7 @@ class CategoriaCreateView(View):
         return render(request, 'cardapio/criaCategoria.html', {'formulario': formulario})
 
 
-class CategoriaUpdateView(View):
+class CategoriaUpdateView(LoginRequiredMixin, GerenteMixin, View):
     """Exibe formulário preenchido e atualiza categoria existente."""
 
     def get(self, request, pk):
@@ -67,7 +82,7 @@ class CategoriaUpdateView(View):
         return render(request, 'cardapio/atualizaCategoria.html', {'formulario': formulario, 'categoria': categoria})
 
 
-class CategoriaDeleteView(View):
+class CategoriaDeleteView(LoginRequiredMixin, GerenteMixin, View):
     """Exibe confirmação e remove categoria."""
 
     def get(self, request, pk):
@@ -85,7 +100,7 @@ class CategoriaDeleteView(View):
 # CRUD de ItemCardapio
 # ──────────────────────────────────────────────
 
-class ItemCardapioListView(View):
+class ItemCardapioListView(LoginRequiredMixin, View):
     """Lista itens do cardápio, com filtro opcional por categoria via GET ?categoria=ID."""
 
     def get(self, request):
@@ -105,7 +120,7 @@ class ItemCardapioListView(View):
         })
 
 
-class ItemCardapioCreateView(View):
+class ItemCardapioCreateView(LoginRequiredMixin, GerenteMixin, View):
     """Exibe formulário vazio e salva novo item do cardápio."""
 
     def get(self, request):
@@ -122,7 +137,7 @@ class ItemCardapioCreateView(View):
         return render(request, 'cardapio/criaItemCardapio.html', {'formulario': formulario})
 
 
-class ItemCardapioUpdateView(View):
+class ItemCardapioUpdateView(LoginRequiredMixin, GerenteMixin, View):
     """Exibe formulário preenchido e atualiza item existente."""
 
     def get(self, request, pk):
@@ -141,7 +156,7 @@ class ItemCardapioUpdateView(View):
         return render(request, 'cardapio/atualizaItemCardapio.html', {'formulario': formulario, 'item': item})
 
 
-class ItemCardapioDeleteView(View):
+class ItemCardapioDeleteView(LoginRequiredMixin, GerenteMixin, View):
     """Exibe confirmação e remove item do cardápio."""
 
     def get(self, request, pk):
@@ -153,3 +168,36 @@ class ItemCardapioDeleteView(View):
         item = get_object_or_404(ItemCardapio, pk=pk)
         item.delete()
         return HttpResponseRedirect(reverse_lazy('cardapio:lista-itens'))
+
+
+# ──────────────────────────────────────────────
+# Autenticação: Registro e Logout com confirmação
+# ──────────────────────────────────────────────
+
+class RegistroView(View):
+    """Exibe formulário de registro e cria o User + Perfil ao submeter."""
+
+    def get(self, request):
+        formulario = RegistroForm()
+        return render(request, 'cardapio/registro.html', {'formulario': formulario})
+
+    def post(self, request):
+        formulario = RegistroForm(request.POST)
+        if formulario.is_valid():
+            # Salva o User no banco
+            user = formulario.save()
+            # Recupera o tipo escolhido (campo extra do formulário)
+            tipo = formulario.cleaned_data['tipo']
+            # Cria o Perfil vinculado ao usuário recém-criado
+            Perfil.objects.create(usuario=user, tipo=tipo)
+            # Redireciona para a página de login
+            return HttpResponseRedirect(reverse_lazy('login'))
+        # Formulário inválido: reexibe com erros
+        return render(request, 'cardapio/registro.html', {'formulario': formulario})
+
+
+class LogoutConfirmView(View):
+    """Página de confirmação antes de efetuar o logout."""
+
+    def get(self, request):
+        return render(request, 'cardapio/logout_confirma.html')
