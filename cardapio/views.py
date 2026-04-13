@@ -1,4 +1,14 @@
-# Views do app cardapio — padrão da aula: classes que estendem View
+# =============================================================================
+# views.py — Views do app cardapio.
+#
+# Padrão adotado: todas as views estendem django.views.generic.base.View
+# e implementam os métodos get() e/ou post() explicitamente.
+# A proteção de acesso é feita por mixins herdados antes de View:
+#   LoginRequiredMixin → exige usuário autenticado
+#   GerenteMixin       → exige perfil 'gerente'
+#   AtendenteMixin     → exige perfil 'atendente'
+#   ClienteMixin       → exige perfil 'cliente'
+# =============================================================================
 from django.views.generic.base import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
@@ -16,7 +26,11 @@ from .forms import CategoriaForm, ItemCardapioForm, RegistroForm, PedidoForm
 # ──────────────────────────────────────────────
 
 class HomeView(View):
-    """Página inicial do site."""
+    """
+    Página inicial do site.
+    Acesso: todos (autenticados ou não).
+    Template: home.html — exibe cards diferentes conforme o perfil do usuário.
+    """
 
     def get(self, request):
         return render(request, 'cardapio/home.html')
@@ -61,7 +75,11 @@ class ClienteMixin:
 # ──────────────────────────────────────────────
 
 class CategoriaListView(LoginRequiredMixin, View):
-    """Lista todas as categorias do cardápio."""
+    """
+    Lista todas as categorias do cardápio.
+    Acesso: qualquer usuário autenticado.
+    Template: listaCategoria.html — botões de CRUD visíveis só para gerente.
+    """
 
     def get(self, request):
         categorias = Categoria.objects.all()
@@ -69,7 +87,10 @@ class CategoriaListView(LoginRequiredMixin, View):
 
 
 class CategoriaCreateView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe formulário vazio e salva nova categoria."""
+    """
+    Exibe formulário vazio (GET) e salva nova categoria (POST).
+    Acesso: gerente. Template: criaCategoria.html.
+    """
 
     def get(self, request):
         # Formulário vazio para criação
@@ -86,7 +107,10 @@ class CategoriaCreateView(LoginRequiredMixin, GerenteMixin, View):
 
 
 class CategoriaUpdateView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe formulário preenchido e atualiza categoria existente."""
+    """
+    Exibe formulário preenchido (GET) e atualiza categoria existente (POST).
+    Acesso: gerente. Template: atualizaCategoria.html.
+    """
 
     def get(self, request, pk):
         # Busca a categoria ou retorna 404
@@ -105,7 +129,10 @@ class CategoriaUpdateView(LoginRequiredMixin, GerenteMixin, View):
 
 
 class CategoriaDeleteView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe confirmação e remove categoria."""
+    """
+    Exibe página de confirmação (GET) e remove categoria (POST).
+    Acesso: gerente. Template: apagaCategoria.html.
+    """
 
     def get(self, request, pk):
         # Busca a categoria ou retorna 404
@@ -123,7 +150,11 @@ class CategoriaDeleteView(LoginRequiredMixin, GerenteMixin, View):
 # ──────────────────────────────────────────────
 
 class ItemCardapioListView(LoginRequiredMixin, View):
-    """Lista itens do cardápio, com filtro opcional por categoria via GET ?categoria=ID."""
+    """
+    Lista itens do cardápio com filtro opcional por categoria (?categoria=ID).
+    Acesso: qualquer usuário autenticado.
+    Template: listaItemCardapio.html — botões de CRUD visíveis só para gerente.
+    """
 
     def get(self, request):
         # Verifica se foi passado filtro de categoria na query string
@@ -143,7 +174,10 @@ class ItemCardapioListView(LoginRequiredMixin, View):
 
 
 class ItemCardapioCreateView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe formulário vazio e salva novo item do cardápio."""
+    """
+    Exibe formulário vazio (GET) e salva novo item do cardápio (POST).
+    Acesso: gerente. Template: criaItemCardapio.html.
+    """
 
     def get(self, request):
         # Formulário vazio para criação
@@ -160,7 +194,10 @@ class ItemCardapioCreateView(LoginRequiredMixin, GerenteMixin, View):
 
 
 class ItemCardapioUpdateView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe formulário preenchido e atualiza item existente."""
+    """
+    Exibe formulário preenchido (GET) e atualiza item existente (POST).
+    Acesso: gerente. Template: atualizaItemCardapio.html.
+    """
 
     def get(self, request, pk):
         # Busca o item ou retorna 404
@@ -179,7 +216,10 @@ class ItemCardapioUpdateView(LoginRequiredMixin, GerenteMixin, View):
 
 
 class ItemCardapioDeleteView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe confirmação e remove item do cardápio."""
+    """
+    Exibe página de confirmação (GET) e remove item do cardápio (POST).
+    Acesso: gerente. Template: apagaItemCardapio.html.
+    """
 
     def get(self, request, pk):
         # Busca o item ou retorna 404
@@ -197,7 +237,11 @@ class ItemCardapioDeleteView(LoginRequiredMixin, GerenteMixin, View):
 # ──────────────────────────────────────────────
 
 class RegistroView(View):
-    """Exibe formulário de registro e cria o User + Perfil ao submeter."""
+    """
+    Exibe formulário de registro (GET) e cria o User + Perfil ao submeter (POST).
+    Acesso: qualquer visitante (não exige login).
+    Template: registro.html. Redireciona para login após registro bem-sucedido.
+    """
 
     def get(self, request):
         formulario = RegistroForm()
@@ -219,7 +263,11 @@ class RegistroView(View):
 
 
 class LogoutConfirmView(View):
-    """Página de confirmação antes de efetuar o logout."""
+    """
+    Exibe página de confirmação antes de efetuar o logout (GET).
+    O formulário na página faz POST para a LogoutView do Django.
+    Acesso: qualquer usuário. Template: logout_confirma.html.
+    """
 
     def get(self, request):
         return render(request, 'cardapio/logout_confirma.html')
@@ -230,7 +278,13 @@ class LogoutConfirmView(View):
 # ──────────────────────────────────────────────
 
 class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
-    """Exibe o cardápio disponível e cria um novo pedido para o cliente."""
+    """
+    Exibe os itens disponíveis agrupados por categoria (GET) e cria um
+    novo Pedido com seus ItensPedido ao submeter (POST).
+    Acesso: cliente. Template: criarPedido.html.
+    Os itens são enviados como campos 'item_ID' no POST; a view itera
+    sobre eles e cria um ItemPedido para cada quantidade > 0.
+    """
 
     def get(self, request):
         # Categorias com seus itens disponíveis pré-carregados (evita N+1 queries)
@@ -306,7 +360,11 @@ class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
 
 
 class MeusPedidosView(LoginRequiredMixin, ClienteMixin, View):
-    """Lista os pedidos do cliente logado com seus itens e totais."""
+    """
+    Lista os pedidos do cliente logado com itens e totais calculados.
+    Acesso: cliente. Template: meusPedidos.html.
+    Os totais são calculados na view (templates não fazem multiplicação).
+    """
 
     def get(self, request):
         # Busca os pedidos do cliente com itens pré-carregados (evita N+1 queries)
@@ -333,7 +391,11 @@ class MeusPedidosView(LoginRequiredMixin, ClienteMixin, View):
 # ──────────────────────────────────────────────
 
 class FilaPedidosView(LoginRequiredMixin, AtendenteMixin, View):
-    """Exibe os pedidos pendentes para o atendente, com filtro opcional por status."""
+    """
+    Exibe pedidos pendentes (não entregues) para o atendente (GET).
+    Aceita filtro por status via ?status=VALOR para ver qualquer etapa.
+    Acesso: atendente. Template: filaPedidos.html.
+    """
 
     # Status disponíveis para filtro — espelha o modelo Pedido
     STATUS_CHOICES = Pedido.STATUS_CHOICES
@@ -359,7 +421,12 @@ class FilaPedidosView(LoginRequiredMixin, AtendenteMixin, View):
 
 
 class AtualizarStatusPedidoView(LoginRequiredMixin, AtendenteMixin, View):
-    """Recebe POST com novo status e atualiza o pedido. Redireciona para a fila."""
+    """
+    Atualiza o status de um pedido via POST e redireciona para a fila.
+    Valida que o status recebido é um valor permitido (STATUS_VALIDOS)
+    antes de salvar, evitando valores arbitrários do POST.
+    Acesso: atendente. Não possui template próprio (só post).
+    """
 
     # Status válidos — evita gravar valores arbitrários do POST
     STATUS_VALIDOS = {choice[0] for choice in Pedido.STATUS_CHOICES}
@@ -381,7 +448,12 @@ class AtualizarStatusPedidoView(LoginRequiredMixin, AtendenteMixin, View):
 # ──────────────────────────────────────────────
 
 class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
-    """Exibe todos os pedidos para o gerente, com filtros por status e data."""
+    """
+    Exibe todos os pedidos em tabela para o gerente (GET).
+    Aceita filtros combinados: ?status=VALOR e ?data=AAAA-MM-DD.
+    Calcula o total de cada pedido na view (templates não fazem multiplicação).
+    Acesso: gerente. Template: painelGerente.html.
+    """
 
     def get(self, request):
         pedidos_qs = Pedido.objects.prefetch_related('itens__item').select_related('cliente')

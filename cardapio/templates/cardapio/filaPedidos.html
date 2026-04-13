@@ -31,7 +31,7 @@
 
         <!-- Badge de status com cor por etapa -->
         {% if pedido.status == 'recebido' %}
-            <span class="badge bg-primary">{{ pedido.get_status_display }}</span>
+            <span class="badge bg-info text-dark">{{ pedido.get_status_display }}</span>
         {% elif pedido.status == 'em_preparo' %}
             <span class="badge bg-warning text-dark">{{ pedido.get_status_display }}</span>
         {% elif pedido.status == 'pronto' %}

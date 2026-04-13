@@ -1,39 +1,95 @@
-<!-- Barra de navegação do site -->
+{# Barra de navegação principal do site — adapta os links ao perfil do usuário logado #}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
+
+        {# Brand: nome do restaurante com link para a home #}
         <a class="navbar-brand" href="{% url 'cardapio:home' %}">🍽 Restaurante</a>
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="{% url 'cardapio:home' %}">Home</a>
 
-            {% if user.is_authenticated %}
-                {% if user.perfil.tipo == 'gerente' %}
-                    <!-- Gerente: acesso completo ao CRUD + painel de pedidos -->
-                    <a class="nav-link" href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
-                    <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
-                    <a class="nav-link" href="{% url 'cardapio:painel-gerente' %}">Painel de Pedidos</a>
-                {% elif user.perfil.tipo == 'atendente' %}
-                    <!-- Atendente: fila de pedidos -->
-                    <a class="nav-link" href="{% url 'cardapio:fila-pedidos' %}">Fila de Pedidos</a>
-                {% elif user.perfil.tipo == 'cliente' %}
-                    <!-- Cliente: visualização do cardápio e pedidos próprios -->
-                    <a class="nav-link" href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
-                    <a class="nav-link" href="{% url 'cardapio:criar-pedido' %}">Novo Pedido</a>
-                    <a class="nav-link" href="{% url 'cardapio:meus-pedidos' %}">Meus Pedidos</a>
+        {# Botão toggler: colapsa o menu em telas pequenas (mobile) #}
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarPrincipal"
+                aria-controls="navbarPrincipal" aria-expanded="false" aria-label="Abrir menu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        {# Conteúdo da navbar — colapsável em mobile #}
+        <div class="collapse navbar-collapse" id="navbarPrincipal">
+
+            {# Links principais — variam conforme o tipo de perfil #}
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+                       href="{% url 'cardapio:home' %}">Home</a>
+                </li>
+
+                {% if user.is_authenticated %}
+                    {% if user.perfil.tipo == 'gerente' %}
+                        {# Gerente: acesso ao CRUD e painel de pedidos #}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'item' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'painel' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:painel-gerente' %}">Painel de Pedidos</a>
+                        </li>
+
+                    {% elif user.perfil.tipo == 'atendente' %}
+                        {# Atendente: fila de pedidos para atualizar status #}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'fila' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:fila-pedidos' %}">Fila de Pedidos</a>
+                        </li>
+
+                    {% elif user.perfil.tipo == 'cliente' %}
+                        {# Cliente: visualização do cardápio e gestão dos próprios pedidos #}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'item' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'criar-pedido' %}active{% endif %}"
+                               href="{% url 'cardapio:criar-pedido' %}">Novo Pedido</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'meus-pedidos' %}active{% endif %}"
+                               href="{% url 'cardapio:meus-pedidos' %}">Meus Pedidos</a>
+                        </li>
+                    {% endif %}
                 {% endif %}
-            {% endif %}
-        </div>
+            </ul>
 
-        <!-- Menu de autenticação -->
-        <div class="navbar-nav ms-auto">
-            {% if user.is_authenticated %}
-                <span class="nav-link text-light">
-                    Olá, {% firstof user.username "visitante" %}
-                </span>
-                <a class="nav-link" href="{% url 'logout-confirma' %}">Sair</a>
-            {% else %}
-                <a class="nav-link" href="{% url 'login' %}">Login</a>
-                <a class="nav-link" href="{% url 'registro' %}">Registrar</a>
-            {% endif %}
-        </div>
+            {# Menu de autenticação à direita: exibe usuário logado ou links de login/registro #}
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="nav-link text-light">
+                            Olá, <strong>{% firstof user.username "visitante" %}</strong>
+                            {# Exibe o tipo de perfil como badge ao lado do nome #}
+                            {% if user.perfil.tipo %}
+                                <span class="badge bg-secondary ms-1">{{ user.perfil.get_tipo_display }}</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout-confirma' %}">Sair</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+                           href="{% url 'login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'registro' %}active{% endif %}"
+                           href="{% url 'registro' %}">Registrar</a>
+                    </li>
+                {% endif %}
+            </ul>
+
+        </div>{# fim .collapse #}
     </div>
 </nav>

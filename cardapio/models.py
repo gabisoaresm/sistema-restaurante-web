@@ -1,10 +1,24 @@
-# Modelos do sistema de pedidos do restaurante
+# =============================================================================
+# models.py — Modelos de dados do sistema de pedidos do restaurante.
+#
+# Estrutura de relacionamentos:
+#   Categoria ──< ItemCardapio     (uma categoria tem muitos itens)
+#   User ──< Pedido                (um usuário faz vários pedidos)
+#   Pedido ──< ItemPedido >── ItemCardapio  (pedido tem vários itens do cardápio)
+#   User ──1 Perfil                (cada usuário tem um perfil: gerente/atendente/cliente)
+# =============================================================================
+
 from django.db import models
 from django.contrib.auth.models import User
 
 
+# ── Cardápio ─────────────────────────────────────────────────────────────────
+
 class Categoria(models.Model):
-    """Categoria dos itens do cardápio (ex: Entradas, Pratos Principais, Bebidas)."""
+    """
+    Categoria dos itens do cardápio (ex: Entradas, Pratos Principais, Bebidas).
+    Usada para agrupar e filtrar os itens na listagem do cardápio.
+    """
     nome = models.CharField(max_length=100, help_text='Nome da categoria')
 
     class Meta:
@@ -17,7 +31,11 @@ class Categoria(models.Model):
 
 
 class ItemCardapio(models.Model):
-    """Item disponível no cardápio do restaurante."""
+    """
+    Item disponível no cardápio do restaurante.
+    Pertence a uma Categoria e pode ser marcado como indisponível
+    sem precisar ser removido do banco.
+    """
     nome = models.CharField(max_length=200, help_text='Nome do item')
     descricao = models.TextField(help_text='Descrição do item')
     preco = models.DecimalField(
@@ -44,10 +62,16 @@ class ItemCardapio(models.Model):
         return f'{self.nome} ({self.categoria})'
 
 
-class Pedido(models.Model):
-    """Pedido realizado por um cliente."""
+# ── Pedidos ───────────────────────────────────────────────────────────────────
 
-    # Opções de status do pedido
+class Pedido(models.Model):
+    """
+    Pedido realizado por um cliente.
+    Agrupa um ou mais ItemPedido e acompanha o ciclo de vida
+    do pedido pelo campo status.
+    """
+
+    # Ciclo de vida do pedido: recebido → em_preparo → pronto → entregue
     STATUS_CHOICES = [
         ('recebido', 'Recebido'),
         ('em_preparo', 'Em Preparo'),
@@ -86,11 +110,15 @@ class Pedido(models.Model):
 
 
 class ItemPedido(models.Model):
-    """Item individual dentro de um pedido."""
+    """
+    Item individual dentro de um pedido.
+    Liga um Pedido a um ItemCardapio com a quantidade solicitada.
+    Acesso reverso a partir do Pedido: pedido.itens.all()
+    """
     pedido = models.ForeignKey(
         Pedido,
         on_delete=models.CASCADE,
-        related_name='itens',
+        related_name='itens',       # pedido.itens.all() nos templates/views
         help_text='Pedido ao qual este item pertence'
     )
     item = models.ForeignKey(
@@ -111,10 +139,18 @@ class ItemPedido(models.Model):
         return f'{self.quantidade}x {self.item} no Pedido #{self.pedido.pk}'
 
 
-class Perfil(models.Model):
-    """Perfil estendido do usuário com o tipo de acesso no sistema."""
+# ── Perfil de usuário ─────────────────────────────────────────────────────────
 
-    # Tipos de usuário do sistema
+class Perfil(models.Model):
+    """
+    Perfil estendido do usuário com o tipo de acesso no sistema.
+    Relação OneToOne com User — criado no momento do registro.
+    O tipo define quais views e funcionalidades o usuário pode acessar:
+      - gerente: CRUD completo e painel de pedidos
+      - atendente: fila de pedidos e atualização de status
+      - cliente: fazer pedidos e consultar os próprios pedidos
+    """
+
     TIPO_CHOICES = [
         ('gerente', 'Gerente'),
         ('atendente', 'Atendente'),

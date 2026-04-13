@@ -59,7 +59,7 @@
             <td>{{ p.pedido.cliente.username }}</td>
             <td>
                 {% if p.pedido.status == 'recebido' %}
-                    <span class="badge bg-primary">{{ p.pedido.get_status_display }}</span>
+                    <span class="badge bg-info text-dark">{{ p.pedido.get_status_display }}</span>
                 {% elif p.pedido.status == 'em_preparo' %}
                     <span class="badge bg-warning text-dark">{{ p.pedido.get_status_display }}</span>
                 {% elif p.pedido.status == 'pronto' %}

@@ -1,23 +1,52 @@
-/* Estilo personalizado do sistema de pedidos do restaurante */
+/*
+ * estilo.css — Estilos personalizados do sistema de pedidos do restaurante.
+ * Complementa o Bootstrap 5 com ajustes específicos do projeto.
+ */
 
-/* Alinha os rótulos dos formulários à direita e ao topo */
+
+/* ── Formulários renderizados com as_table ────────────────────────────────── */
+
+/* Alinha os rótulos (th) à direita e ao topo da célula para melhor leitura */
 .formulario th {
     text-align: right;
     vertical-align: top;
     padding-right: 8px;
     padding-top: 6px;
+    white-space: nowrap;
 }
 
-/* Mensagens de erro nos formulários */
+/* Adiciona espaçamento entre as linhas da tabela de formulário */
+.formulario tr {
+    margin-bottom: 6px;
+}
+
+
+/* ── Mensagens de erro dos formulários Django ─────────────────────────────── */
+
+/* Lista de erros exibida abaixo dos campos com problema */
 .errorlist {
-    color: red;
+    color: #dc3545;     /* vermelho Bootstrap (--bs-danger) */
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: 2px 0 0 0;
+    font-size: 0.875rem;
 }
 
-/* Texto de ajuda dos campos do formulário */
+
+/* ── Texto de ajuda dos campos de formulário ──────────────────────────────── */
+
+/* Aparece abaixo do campo para orientar o usuário (gerado pelo Django) */
 .helptext {
-    font-size: 10px;
-    color: #666;
+    font-size: 0.8rem;
+    color: #6c757d;     /* cinza Bootstrap (--bs-secondary) */
+    display: block;
+    margin-top: 2px;
+}
+
+
+/* ── Ajustes gerais de espaçamento ───────────────────────────────────────── */
+
+/* Garante espaço mínimo entre o rodapé da página e o conteúdo */
+body {
+    padding-bottom: 40px;
 }
