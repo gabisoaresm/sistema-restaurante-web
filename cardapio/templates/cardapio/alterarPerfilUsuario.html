@@ -1,0 +1,48 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Alterar Perfil — {{ usuario.username }}{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2 class="mb-4">Alterar Perfil do Usuário</h2>
+
+        {# Informações somente-leitura do usuário selecionado #}
+        <div class="card mb-4">
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th style="width: 140px;">Usuário</th>
+                        <td>{{ usuario.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nome completo</th>
+                        <td>{% firstof usuario.get_full_name "—" %}</td>
+                    </tr>
+                    <tr>
+                        <th>E-mail</th>
+                        <td>{% firstof usuario.email "—" %}</td>
+                    </tr>
+                    <tr>
+                        <th>Perfil atual</th>
+                        <td>{{ usuario.perfil.get_tipo_display }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        {# Formulário para alterar o tipo de perfil #}
+        <form method="post">
+            {% csrf_token %}
+            <table class="formulario">
+                {{ formulario.as_table }}
+            </table>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a href="{% url 'cardapio:gerenciar-usuarios' %}" class="btn btn-outline-secondary ms-2">Cancelar</a>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

@@ -8,7 +8,7 @@
         <div class="card">
             <div class="card-body text-center">
                 <h4 class="mb-3">Deseja sair?</h4>
-                <p>Olá, <strong>{% firstof user.username "visitante" %}</strong>. Tem certeza que deseja encerrar a sessão?</p>
+                <p>Olá, <strong>{% firstof user.first_name user.username "visitante" %}</strong>. Tem certeza que deseja encerrar a sessão?</p>
 
                 <!-- Logout via POST (exigido pelo Django 5+) -->
                 <form method="post" action="{% url 'logout' %}">

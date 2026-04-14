@@ -9,7 +9,8 @@
         <h1>Bem-vindo ao Restaurante 🍽</h1>
         <p class="lead text-muted">
             {% if user.is_authenticated %}
-                Olá, <strong>{{ user.username }}</strong>! O que deseja fazer hoje?
+                {# Usa o primeiro nome se preenchido; caso contrário usa o username #}
+                <strong>{% firstof user.first_name user.username %}</strong>, o que deseja fazer hoje?
             {% else %}
                 Faça login para acessar o sistema.
             {% endif %}

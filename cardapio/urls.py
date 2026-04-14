@@ -13,6 +13,8 @@ from .views import (
     ItemCardapioListView, ItemCardapioCreateView, ItemCardapioUpdateView, ItemCardapioDeleteView,
     CriarPedidoView, MeusPedidosView,
     FilaPedidosView, AtualizarStatusPedidoView, PainelGerenteView,
+    PerfilView,
+    GerenciarUsuariosView, AlterarPerfilUsuarioView,
 )
 
 # Namespace do app — obrigatório para {% url 'cardapio:...' %} funcionar
@@ -34,6 +36,13 @@ urlpatterns = [
     path('itens/novo/', ItemCardapioCreateView.as_view(), name='cria-item'),
     path('itens/editar/<int:pk>/', ItemCardapioUpdateView.as_view(), name='atualiza-item'),
     path('itens/excluir/<int:pk>/', ItemCardapioDeleteView.as_view(), name='apaga-item'),
+
+    # ── Perfil do usuário ─────────────────────────────────────────────────────
+    path('perfil/', PerfilView.as_view(), name='perfil'),
+
+    # ── Gerenciamento de usuários (só gerente) ────────────────────────────────
+    path('usuarios/', GerenciarUsuariosView.as_view(), name='gerenciar-usuarios'),
+    path('usuarios/alterar/<int:pk>/', AlterarPerfilUsuarioView.as_view(), name='alterar-perfil-usuario'),
 
     # ── Pedidos do cliente ────────────────────────────────────────────────────
     path('pedidos/novo/', CriarPedidoView.as_view(), name='criar-pedido'),

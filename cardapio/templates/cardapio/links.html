@@ -24,7 +24,7 @@
 
                 {% if user.is_authenticated %}
                     {% if user.perfil.tipo == 'gerente' %}
-                        {# Gerente: acesso ao CRUD e painel de pedidos #}
+                        {# Gerente: acesso ao CRUD, painel de pedidos e gestão de usuários #}
                         <li class="nav-item">
                             <a class="nav-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}"
                                href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
@@ -36,6 +36,10 @@
                         <li class="nav-item">
                             <a class="nav-link {% if 'painel' in request.resolver_match.url_name %}active{% endif %}"
                                href="{% url 'cardapio:painel-gerente' %}">Painel de Pedidos</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:gerenciar-usuarios' %}">Gerenciar Usuários</a>
                         </li>
 
                     {% elif user.perfil.tipo == 'atendente' %}
@@ -55,10 +59,6 @@
                             <a class="nav-link {% if request.resolver_match.url_name == 'criar-pedido' %}active{% endif %}"
                                href="{% url 'cardapio:criar-pedido' %}">Novo Pedido</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'meus-pedidos' %}active{% endif %}"
-                               href="{% url 'cardapio:meus-pedidos' %}">Meus Pedidos</a>
-                        </li>
                     {% endif %}
                 {% endif %}
             </ul>
@@ -66,17 +66,39 @@
             {# Menu de autenticação à direita: exibe usuário logado ou links de login/registro #}
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <span class="nav-link text-light">
-                            Olá, <strong>{% firstof user.username "visitante" %}</strong>
-                            {# Exibe o tipo de perfil como badge ao lado do nome #}
-                            {% if user.perfil.tipo %}
-                                <span class="badge bg-secondary ms-1">{{ user.perfil.get_tipo_display }}</span>
+                    {# Menu dropdown do usuário — ícone + nome + seta expansiva #}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+                           href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle fs-5"></i>
+                            <strong>{% firstof user.first_name user.username %}</strong>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {# Link para a página de perfil do usuário #}
+                            <li>
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+                                   href="{% url 'cardapio:perfil' %}">
+                                    <i class="bi bi-person me-1"></i> Meu Perfil
+                                </a>
+                            </li>
+                            {# Meus Pedidos — visível apenas para clientes #}
+                            {% if user.perfil.tipo == 'cliente' %}
+                            <li>
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'meus-pedidos' %}active{% endif %}"
+                                   href="{% url 'cardapio:meus-pedidos' %}">
+                                    <i class="bi bi-receipt me-1"></i> Meus Pedidos
+                                </a>
+                            </li>
                             {% endif %}
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout-confirma' %}">Sair</a>
+                            <li><hr class="dropdown-divider"></li>
+                            {# Link de logout #}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout-confirma' %}">
+                                    <i class="bi bi-box-arrow-right me-1"></i> Sair
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 {% else %}
                     <li class="nav-item">

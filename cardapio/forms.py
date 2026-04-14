@@ -5,7 +5,8 @@
 #   CategoriaForm      → criar/editar categorias do cardápio
 #   ItemCardapioForm   → criar/editar itens do cardápio
 #   PedidoForm         → campo de observações ao criar um pedido
-#   RegistroForm       → cadastro de novo usuário com escolha de perfil
+#   RegistroForm       → cadastro de novo usuário (sempre como cliente)
+#   PerfilUsuarioForm  → edição dos dados pessoais do usuário logado
 # =============================================================================
 
 from django import forms
@@ -58,26 +59,56 @@ class PedidoForm(forms.ModelForm):
         }
 
 
-# ── Formulário de autenticação ────────────────────────────────────────────────
+# ── Formulários de autenticação e perfil ─────────────────────────────────────
 
 class RegistroForm(UserCreationForm):
     """
-    Formulário de registro de novo usuário com escolha do tipo de perfil.
-    Estende o UserCreationForm do Django com o campo extra 'tipo'.
-    O campo 'tipo' não pertence ao modelo User — é processado na
-    RegistroView para criar o objeto Perfil vinculado ao usuário.
+    Formulário de registro de novo usuário.
+    Todo usuário registrado pelo site é automaticamente cliente —
+    não há campo de escolha de perfil por segurança.
+    O campo email é obrigatório aqui, embora seja opcional no model User.
     """
 
-    # Opções de tipo de perfil — espelha as choices do modelo Perfil
-    TIPO_CHOICES = [
-        ('gerente', 'Gerente'),
-        ('atendente', 'Atendente'),
-        ('cliente', 'Cliente'),
-    ]
-
-    # Campo extra: não entra em Meta.fields — tratado separadamente na view
-    tipo = forms.ChoiceField(choices=TIPO_CHOICES, label='Tipo de perfil')
+    # email sobrescrito para torná-lo obrigatório no registro
+    email = forms.EmailField(required=True, label='E-mail')
 
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2')
+        # first_name e last_name são opcionais no model (blank=True)
+        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+
+
+class AlterarPerfilForm(forms.Form):
+    """
+    Formulário simples para o gerente alterar o tipo de perfil de outro usuário.
+    Não é um ModelForm — o campo tipo é aplicado manualmente na view
+    sobre o objeto Perfil do usuário selecionado.
+    """
+
+    TIPO_CHOICES = [
+        ('gerente',   'Gerente'),
+        ('atendente', 'Atendente'),
+        ('cliente',   'Cliente'),
+    ]
+
+    tipo = forms.ChoiceField(choices=TIPO_CHOICES, label='Tipo de perfil')
+
+
+class PerfilUsuarioForm(forms.ModelForm):
+    """
+    Formulário para edição dos dados pessoais do usuário logado.
+    Permite alterar nome, sobrenome e e-mail — não altera senha nem username.
+    Usado na PerfilView com instance=request.user para garantir que
+    o usuário só edita seus próprios dados.
+    """
+
+    # email sobrescrito para torná-lo obrigatório na edição do perfil
+    email = forms.EmailField(required=True, label='E-mail')
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+        labels = {
+            'first_name': 'Nome',
+            'last_name':  'Sobrenome',
+        }

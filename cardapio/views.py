@@ -17,8 +17,9 @@ from django.urls import reverse_lazy
 
 from django.db.models import Prefetch
 
+from django.contrib.auth.models import User
 from .models import Categoria, ItemCardapio, Perfil, Pedido, ItemPedido
-from .forms import CategoriaForm, ItemCardapioForm, RegistroForm, PedidoForm
+from .forms import CategoriaForm, ItemCardapioForm, RegistroForm, PedidoForm, PerfilUsuarioForm, AlterarPerfilForm
 
 
 # ──────────────────────────────────────────────
@@ -252,10 +253,8 @@ class RegistroView(View):
         if formulario.is_valid():
             # Salva o User no banco
             user = formulario.save()
-            # Recupera o tipo escolhido (campo extra do formulário)
-            tipo = formulario.cleaned_data['tipo']
-            # Cria o Perfil vinculado ao usuário recém-criado
-            Perfil.objects.create(usuario=user, tipo=tipo)
+            # Todo usuário registrado pelo site é automaticamente cliente
+            Perfil.objects.create(usuario=user, tipo='cliente')
             # Redireciona para a página de login
             return HttpResponseRedirect(reverse_lazy('login'))
         # Formulário inválido: reexibe com erros
@@ -271,6 +270,81 @@ class LogoutConfirmView(View):
 
     def get(self, request):
         return render(request, 'cardapio/logout_confirma.html')
+
+
+class PerfilView(LoginRequiredMixin, View):
+    """
+    Exibe informações do usuário logado e formulário para editar
+    nome, sobrenome e e-mail (GET).
+    Salva as alterações garantindo instance=request.user —
+    o usuário só edita seus próprios dados (POST).
+    Após salvar com sucesso, reexibe a página com mensagem de confirmação.
+    """
+
+    def get(self, request):
+        # Pré-preenche o formulário com os dados do usuário logado
+        formulario = PerfilUsuarioForm(instance=request.user)
+        return render(request, 'cardapio/perfil.html', {'formulario': formulario})
+
+    def post(self, request):
+        # instance=request.user garante que o usuário edita apenas seus próprios dados
+        formulario = PerfilUsuarioForm(request.POST, instance=request.user)
+        if formulario.is_valid():
+            formulario.save()
+            return render(request, 'cardapio/perfil.html', {
+                'formulario': formulario,
+                'sucesso': 'Dados atualizados com sucesso!',
+            })
+        # Formulário inválido: reexibe com erros
+        return render(request, 'cardapio/perfil.html', {'formulario': formulario})
+
+
+# ──────────────────────────────────────────────
+# Gerenciamento de usuários (gerente)
+# ──────────────────────────────────────────────
+
+class GerenciarUsuariosView(LoginRequiredMixin, GerenteMixin, View):
+    """
+    Lista todos os usuários cadastrados no sistema com seu perfil (GET).
+    Acesso: gerente. Template: gerenciarUsuarios.html.
+    """
+
+    def get(self, request):
+        # select_related('perfil') evita N+1 queries ao acessar usuario.perfil no template
+        usuarios = User.objects.select_related('perfil').order_by('username')
+        return render(request, 'cardapio/gerenciarUsuarios.html', {'usuarios': usuarios})
+
+
+class AlterarPerfilUsuarioView(LoginRequiredMixin, GerenteMixin, View):
+    """
+    Exibe formulário para alterar o tipo de perfil de um usuário (GET).
+    Salva o novo tipo e redireciona para a lista de usuários (POST).
+    Acesso: gerente. Template: alterarPerfilUsuario.html.
+    """
+
+    def get(self, request, pk):
+        # Busca o usuário alvo ou retorna 404
+        usuario = get_object_or_404(User, pk=pk)
+        # Pré-seleciona o tipo atual no formulário
+        formulario = AlterarPerfilForm(initial={'tipo': usuario.perfil.tipo})
+        return render(request, 'cardapio/alterarPerfilUsuario.html', {
+            'usuario': usuario,
+            'formulario': formulario,
+        })
+
+    def post(self, request, pk):
+        usuario = get_object_or_404(User, pk=pk)
+        formulario = AlterarPerfilForm(request.POST)
+        if formulario.is_valid():
+            # Atualiza o tipo do Perfil vinculado ao usuário selecionado
+            usuario.perfil.tipo = formulario.cleaned_data['tipo']
+            usuario.perfil.save()
+            return HttpResponseRedirect(reverse_lazy('cardapio:gerenciar-usuarios'))
+        # Formulário inválido: reexibe com erros
+        return render(request, 'cardapio/alterarPerfilUsuario.html', {
+            'usuario': usuario,
+            'formulario': formulario,
+        })
 
 
 # ──────────────────────────────────────────────
