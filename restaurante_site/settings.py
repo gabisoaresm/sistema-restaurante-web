@@ -123,12 +123,6 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'cardapio:home'
 LOGOUT_REDIRECT_URL = 'login'
 
-# Configuração de e-mail via Gmail (aula 09 - Controle de Acesso)
-# Para gerar a senha de app: Google → Segurança → Verificação em duas etapas → Senhas de app
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'gabriela.soaresm16@gmail.com'
-EMAIL_HOST_PASSWORD = 'hebk uunr hixt hxvb'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'gabriela.soaresm16@gmail.com'
+# Configuração de e-mail via console
+# O e-mail de recuperação de senha aparece no terminal onde o servidor está rodando
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -72,6 +72,14 @@ class RegistroForm(UserCreationForm):
     # email sobrescrito para torná-lo obrigatório no registro
     email = forms.EmailField(required=True, label='E-mail')
 
+    def clean_email(self):
+        # Normaliza para minúsculas antes de comparar
+        email = self.cleaned_data['email'].lower()
+        # Verifica se já existe outro usuário com esse e-mail (case-insensitive)
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('Já existe um usuário cadastrado com este e-mail.')
+        return email
+
     class Meta:
         model = User
         # first_name e last_name são opcionais no model (blank=True)
@@ -104,6 +112,15 @@ class PerfilUsuarioForm(forms.ModelForm):
 
     # email sobrescrito para torná-lo obrigatório na edição do perfil
     email = forms.EmailField(required=True, label='E-mail')
+
+    def clean_email(self):
+        # Normaliza para minúsculas antes de comparar
+        email = self.cleaned_data['email'].lower()
+        # Exclui o próprio usuário da verificação — sem isso ele não conseguiria
+        # salvar o perfil sem trocar o e-mail, pois o seu próprio já estaria no banco
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Já existe um usuário cadastrado com este e-mail.')
+        return email
 
     class Meta:
         model = User

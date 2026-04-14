@@ -17,7 +17,7 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView, PasswordResetCompleteView,
 )
 
-from cardapio.views import RegistroView, LogoutConfirmView
+from cardapio.views import RegistroView, LogoutConfirmView, PasswordResetView
 
 urlpatterns = [
 

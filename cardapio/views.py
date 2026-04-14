@@ -13,7 +13,9 @@ from django.views.generic.base import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
+from django.contrib.auth.views import PasswordResetView as DjangoPasswordResetView
+from django.contrib.auth.forms import PasswordResetForm
 
 from django.db.models import Prefetch
 
@@ -345,6 +347,50 @@ class AlterarPerfilUsuarioView(LoginRequiredMixin, GerenteMixin, View):
             'usuario': usuario,
             'formulario': formulario,
         })
+
+
+# ──────────────────────────────────────────────
+# Recuperação de senha — override para link legível no console
+# ──────────────────────────────────────────────
+
+class ConsolePasswordResetForm(PasswordResetForm):
+    """
+    Sobrescreve send_mail() do PasswordResetForm para imprimir o link de
+    recuperação de forma legível no console durante o desenvolvimento.
+
+    O console.EmailBackend usa codificação quoted-printable (QP), que quebra
+    URLs longas com =\\n a cada 76 caracteres — impossibilitando a cópia.
+    Este override imprime o link sem codificação após o envio normal do e-mail.
+
+    ATENÇÃO: o send_mail que o Django chama pertence ao FORMULÁRIO, não à view.
+    Sobrescrever send_mail() na view não tem efeito — por isso usamos o formulário.
+    """
+    def send_mail(self, subject_template_name, email_template_name, context,
+                  from_email, to_email, html_email_template_name=None):
+        # Envia o e-mail normalmente (aparece no console com QP encoding)
+        super().send_mail(
+            subject_template_name, email_template_name, context,
+            from_email, to_email, html_email_template_name,
+        )
+        # Imprime o link limpo e copiável no terminal
+        link = '{protocol}://{domain}{path}'.format(
+            protocol=context['protocol'],
+            domain=context['domain'],
+            path=reverse('password_reset_confirm',
+                         kwargs={'uidb64': context['uid'], 'token': context['token']}),
+        )
+        print('\n' + '=' * 70)
+        print('LINK DE RECUPERAÇÃO DE SENHA (copie e cole no navegador):')
+        print(link)
+        print('=' * 70 + '\n')
+
+
+class PasswordResetView(DjangoPasswordResetView):
+    """
+    Usa ConsolePasswordResetForm em vez do formulário padrão do Django,
+    para que o link de recuperação seja impresso de forma legível no console.
+    """
+    form_class = ConsolePasswordResetForm
 
 
 # ──────────────────────────────────────────────
