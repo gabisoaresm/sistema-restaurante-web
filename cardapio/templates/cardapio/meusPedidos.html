@@ -5,7 +5,7 @@
 {% block conteudo %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Meus Pedidos</h2>
-    <a href="{% url 'cardapio:criar-pedido' %}" class="btn btn-success">+ Novo Pedido</a>
+    <a href="{% url 'cardapio:pedido-carrinho' %}" class="btn btn-success">+ Novo Pedido</a>
 </div>
 
 {% for p in pedidos %}
@@ -76,6 +76,6 @@
     </div>
 </div>
 {% empty %}
-<p class="text-muted">Você ainda não fez nenhum pedido. <a href="{% url 'cardapio:criar-pedido' %}">Fazer pedido agora</a>.</p>
+<p class="text-muted">Você ainda não fez nenhum pedido. <a href="{% url 'cardapio:pedido-carrinho' %}">Fazer pedido agora</a>.</p>
 {% endfor %}
 {% endblock %}

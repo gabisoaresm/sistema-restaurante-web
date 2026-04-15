@@ -1,0 +1,69 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Cardápio{% endblock %}
+
+{% block conteudo %}
+{% comment %}
+Formulário único que engloba todo o cardápio.
+Ao clicar em "Criar Pedido", as quantidades de todos os itens são enviadas
+de uma vez via POST para CardapioClienteView, que salva o carrinho na sessão
+e redireciona para a página do pedido — sem nenhum recarregamento intermediário.
+{% endcomment %}
+<form method="POST" action="{% url 'cardapio:cardapio-cliente' %}">
+    {% csrf_token %}
+
+    {# Margem inferior extra para o conteúdo não ficar escondido atrás do rodapé fixo #}
+    <div class="pb-5 mb-4">
+
+        <h2 class="mb-4">Cardápio</h2>
+
+        {% if not categorias_ctx %}
+            {# Mensagem exibida quando não há itens disponíveis no cardápio #}
+            <p class="text-muted">Nenhum item disponível no momento.</p>
+        {% endif %}
+
+        {% for sec in categorias_ctx %}
+            {# Título da categoria — exibe apenas o nome, sem a palavra "categoria" #}
+            <h4 class="mt-4 mb-3 border-bottom pb-2">{{ sec.categoria.nome }}</h4>
+
+            <div class="row g-3">
+                {% for entry in sec.itens %}
+                    <div class="col-md-4 col-sm-6">
+                        {# Card com borda azul quando o item está no carrinho (quantidade > 0) #}
+                        <div class="card h-100 {% if entry.quantidade > 0 %}border-primary{% endif %}">
+                            <div class="card-body d-flex flex-column">
+
+                                {# Nome e preço do item em destaque #}
+                                <h5 class="card-title fs-5">{{ entry.item.nome }}</h5>
+                                <p class="card-text text-muted flex-grow-1">{{ entry.item.descricao }}</p>
+                                <p class="fw-bold mb-3">R$ {{ entry.item.preco|floatformat:2 }}</p>
+
+                                {# Campo de quantidade: name="item_<id>" identifica o item no POST #}
+                                <input type="number"
+                                       name="item_{{ entry.item.id }}"
+                                       id="item_{{ entry.item.id }}"
+                                       value="{{ entry.quantidade }}"
+                                       min="0"
+                                       class="form-control form-control-sm text-center"
+                                       style="width: 70px;">
+
+                            </div>{# fim card-body #}
+                        </div>{# fim card #}
+                    </div>{# fim col #}
+                {% endfor %}
+            </div>{# fim row #}
+
+            <hr class="mt-4">
+        {% endfor %}
+
+    </div>{# fim pb-5 #}
+
+    {# Rodapé fixo com botão de submit #}
+    <div class="fixed-bottom bg-white border-top shadow-sm p-3 d-flex justify-content-end align-items-center">
+        <button type="submit" class="btn btn-success">
+            Criar Pedido
+        </button>
+    </div>
+
+</form>
+{% endblock %}

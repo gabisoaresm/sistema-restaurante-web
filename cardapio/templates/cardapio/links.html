@@ -50,14 +50,14 @@
                         </li>
 
                     {% elif user.perfil.tipo == 'cliente' %}
-                        {# Cliente: visualização do cardápio e gestão dos próprios pedidos #}
+                        {# Cliente: cardápio com seleção de itens, pedido e cartões #}
                         <li class="nav-item">
-                            <a class="nav-link {% if 'item' in request.resolver_match.url_name %}active{% endif %}"
-                               href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'cardapio-cliente' %}active{% endif %}"
+                               href="{% url 'cardapio:cardapio-cliente' %}">Cardápio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'criar-pedido' %}active{% endif %}"
-                               href="{% url 'cardapio:criar-pedido' %}">Novo Pedido</a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'pedido-carrinho' %}active{% endif %}"
+                               href="{% url 'cardapio:pedido-carrinho' %}">Pedido</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if 'cartao' in request.resolver_match.url_name %}active{% endif %}"

@@ -242,6 +242,83 @@ class ItemCardapioDeleteView(LoginRequiredMixin, GerenteMixin, View):
 
 
 # ──────────────────────────────────────────────
+# Cardápio para o cliente (com seleção de itens)
+# ──────────────────────────────────────────────
+
+class CardapioClienteView(LoginRequiredMixin, ClienteMixin, View):
+    """
+    Exibe o cardápio agrupado por categoria para o cliente.
+    O cliente ajusta as quantidades via <input type="number"> e submete o formulário
+    ao clicar em "Criar Pedido". Não há recarregamento a cada clique.
+    O estado do carrinho é armazenado em request.session['carrinho'] como
+    um dicionário {'<item_id>': quantidade}.
+    Acesso: cliente autenticado. Template: cardapioCliente.html.
+    """
+
+    def get(self, request):
+        # Lê o carrinho atual da sessão (dicionário vazio se ainda não existir)
+        carrinho = request.session.get('carrinho', {})
+
+        # Monta a lista de categorias com seus itens disponíveis e quantidades do carrinho
+        categorias_ctx = self._montar_categorias(carrinho)
+
+        # Soma total de itens no carrinho para exibir no rodapé
+        total_itens = sum(carrinho.values()) if carrinho else 0
+
+        return render(request, 'cardapio/cardapioCliente.html', {
+            'categorias_ctx': categorias_ctx,
+            'total_itens': total_itens,
+        })
+
+    def post(self, request):
+        # Lê os campos do formulário com prefixo 'item_' (ex.: item_3 = 2)
+        novo_carrinho = {}
+        for chave, valor in request.POST.items():
+            if chave.startswith('item_'):
+                item_id = chave[len('item_'):]  # extrai o id numérico como string
+                try:
+                    quantidade = max(0, int(valor))
+                except (ValueError, TypeError):
+                    quantidade = 0
+                # Só inclui no carrinho itens com quantidade maior que zero
+                if quantidade > 0:
+                    novo_carrinho[item_id] = quantidade
+
+        # Salva o carrinho atualizado na sessão e marca como modificado
+        request.session['carrinho'] = novo_carrinho
+        request.session.modified = True
+
+        # Redireciona para a página do carrinho/pedido
+        return HttpResponseRedirect(reverse_lazy('cardapio:pedido-carrinho'))
+
+    def _montar_categorias(self, carrinho):
+        """Constrói o contexto de categorias com itens disponíveis e quantidades."""
+        categorias_ctx = []
+        for categoria in Categoria.objects.all():
+            itens_disponiveis = categoria.itemcardapio_set.filter(disponivel=True)
+
+            # Ignora categorias sem nenhum item disponível
+            if not itens_disponiveis.exists():
+                continue
+
+            # Para cada item, inclui a quantidade atual no carrinho (0 se não estiver)
+            itens_ctx = [
+                {
+                    'item': item,
+                    'quantidade': carrinho.get(str(item.id), 0),
+                }
+                for item in itens_disponiveis
+            ]
+
+            categorias_ctx.append({
+                'categoria': categoria,
+                'itens': itens_ctx,
+            })
+
+        return categorias_ctx
+
+
+# ──────────────────────────────────────────────
 # Autenticação: Registro e Logout com confirmação
 # ──────────────────────────────────────────────
 
@@ -400,7 +477,180 @@ class PasswordResetView(DjangoPasswordResetView):
 
 
 # ──────────────────────────────────────────────
-# Pedidos do cliente
+# Pedidos do cliente — fluxo carrinho (Fase 2)
+# ──────────────────────────────────────────────
+
+class PedidoCarrinhoView(LoginRequiredMixin, ClienteMixin, View):
+    """
+    Exibe o resumo do carrinho (GET) e processa o pagamento com cartão salvo (POST).
+    Os itens do pedido vêm de request.session['carrinho'] — preenchido em CardapioClienteView.
+    O pedido só é criado após validação do CVV; em caso de erro, a página é reexibida.
+    Acesso: cliente autenticado. Template: pedidoCarrinho.html.
+    """
+
+    def get(self, request):
+        # Lê o carrinho da sessão
+        carrinho = request.session.get('carrinho', {})
+
+        # Se o carrinho estiver vazio, renderiza página informando o cliente
+        if not carrinho:
+            return render(request, 'cardapio/pedidoCarrinho.html', {'carrinho_vazio': True})
+
+        # Monta lista de itens com subtotal calculado na view (templates não multiplicam)
+        itens_pedido, total = self._montar_itens(carrinho)
+
+        # Formulário de cartão com queryset filtrado para o usuário logado
+        form_cartao = self._form_cartao(request)
+
+        return render(request, 'cardapio/pedidoCarrinho.html', {
+            'carrinho_vazio': False,
+            'itens_pedido':   itens_pedido,
+            'total':          total,
+            'form_cartao':    form_cartao,
+            'cartoes':        request.user.cartoes.all(),
+        })
+
+    def post(self, request):
+        carrinho = request.session.get('carrinho', {})
+
+        # Carrinho vazio: não há pedido para criar
+        if not carrinho:
+            return HttpResponseRedirect(reverse_lazy('cardapio:cardapio-cliente'))
+
+        # Monta itens e total a partir do carrinho
+        itens_pedido, total = self._montar_itens(carrinho)
+
+        # Lê observações do POST (campo opcional)
+        observacoes = request.POST.get('observacoes', '').strip()
+
+        # Valida o formulário de cartão + CVV
+        form_cartao = self._form_cartao(request, data=request.POST)
+
+        if not form_cartao.is_valid():
+            # Reexibe o formulário com os erros de validação do Django
+            return render(request, 'cardapio/pedidoCarrinho.html', {
+                'carrinho_vazio': False,
+                'itens_pedido':   itens_pedido,
+                'total':          total,
+                'form_cartao':    form_cartao,
+                'cartoes':        request.user.cartoes.all(),
+            })
+
+        cartao       = form_cartao.cleaned_data['cartao']
+        cvv_digitado = form_cartao.cleaned_data['cvv']
+
+        # Segurança: confirma que o cartão pertence ao usuário logado
+        if cartao.usuario != request.user:
+            return render(request, 'cardapio/pedidoCarrinho.html', {
+                'carrinho_vazio': False,
+                'itens_pedido':   itens_pedido,
+                'total':          total,
+                'form_cartao':    form_cartao,
+                'cartoes':        request.user.cartoes.all(),
+                'erro_cvv':       'Cartão inválido.',
+            })
+
+        # Valida o CVV digitado contra o CVV salvo no cartão
+        if cartao.cvv != cvv_digitado:
+            return render(request, 'cardapio/pedidoCarrinho.html', {
+                'carrinho_vazio': False,
+                'itens_pedido':   itens_pedido,
+                'total':          total,
+                'form_cartao':    form_cartao,
+                'cartoes':        request.user.cartoes.all(),
+                'erro_cvv':       'CVV incorreto. Tente novamente.',
+            })
+
+        # Determina a forma de pagamento conforme o tipo do cartão
+        forma = 'cartao_credito' if cartao.tipo == 'credito' else 'cartao_debito'
+
+        # Cria o pedido com status pago (pagamento realizado agora)
+        pedido = Pedido.objects.create(
+            cliente=request.user,
+            status='recebido',
+            observacoes=observacoes,
+            forma_pagamento=forma,
+            status_pagamento='pago',
+            cartao_utilizado=cartao,
+        )
+
+        # Cria um ItemPedido para cada item do carrinho
+        for entrada in itens_pedido:
+            ItemPedido.objects.create(
+                pedido=pedido,
+                item=entrada['item'],
+                quantidade=entrada['quantidade'],
+            )
+
+        # Limpa o carrinho da sessão após criação bem-sucedida do pedido
+        request.session['carrinho'] = {}
+        request.session.modified = True
+
+        # Redireciona para a página de confirmação com o id do pedido criado
+        return HttpResponseRedirect(
+            reverse('cardapio:pedido-confirmado', kwargs={'pk': pedido.pk})
+        )
+
+    # ── Métodos auxiliares ────────────────────────────────────────────────────
+
+    def _montar_itens(self, carrinho):
+        """
+        Recebe o dicionário de carrinho {str(item_id): quantidade} e retorna
+        uma lista de dicts {'item', 'quantidade', 'subtotal'} e o total geral.
+        Usa get_object_or_404 para cada item_id do carrinho.
+        """
+        itens_pedido = []
+        total = 0
+        for item_id_str, quantidade in carrinho.items():
+            item = get_object_or_404(ItemCardapio, pk=int(item_id_str))
+            subtotal = item.preco * quantidade
+            total += subtotal
+            itens_pedido.append({
+                'item':       item,
+                'quantidade': quantidade,
+                'subtotal':   subtotal,
+            })
+        return itens_pedido, total
+
+    def _form_cartao(self, request, data=None):
+        """Cria PagamentoCartaoSalvoForm com queryset filtrado para o usuário logado."""
+        form = PagamentoCartaoSalvoForm(data)
+        form.fields['cartao'].queryset = CartaoSalvo.objects.filter(usuario=request.user)
+        return form
+
+
+class PedidoConfirmadoView(LoginRequiredMixin, ClienteMixin, View):
+    """
+    Exibe a confirmação do pedido criado pela PedidoCarrinhoView.
+    Verifica que o pedido pertence ao usuário logado antes de renderizar.
+    Acesso: cliente autenticado. Template: pedidoConfirmado.html.
+    """
+
+    def get(self, request, pk):
+        # Busca o pedido ou retorna 404
+        pedido = get_object_or_404(Pedido, pk=pk)
+
+        # Segurança: impede que um cliente veja o pedido de outro
+        if pedido.cliente != request.user:
+            return HttpResponseRedirect(reverse_lazy('cardapio:home'))
+
+        # Busca os itens com subtotal calculado na view
+        itens_confirmados = []
+        total = 0
+        for ip in pedido.itens.select_related('item').all():
+            subtotal = ip.quantidade * ip.item.preco
+            total += subtotal
+            itens_confirmados.append({'ip': ip, 'subtotal': subtotal})
+
+        return render(request, 'cardapio/pedidoConfirmado.html', {
+            'pedido':            pedido,
+            'itens_confirmados': itens_confirmados,
+            'total':             total,
+        })
+
+
+# ──────────────────────────────────────────────
+# Pedidos do cliente — fluxo legado (mantido para referência)
 # ──────────────────────────────────────────────
 
 class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):

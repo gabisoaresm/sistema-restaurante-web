@@ -77,7 +77,7 @@
                     <div class="card-body">
                         <h5 class="card-title">🍽 Cardápio</h5>
                         <p class="card-text text-muted">Consulte os itens disponíveis no cardápio do restaurante.</p>
-                        <a href="{% url 'cardapio:lista-itens' %}" class="btn btn-success">Ver Cardápio</a>
+                        <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success">Ver Cardápio</a>
                     </div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                     <div class="card-body">
                         <h5 class="card-title">🛒 Novo Pedido</h5>
                         <p class="card-text text-muted">Selecione itens do cardápio e faça um novo pedido.</p>
-                        <a href="{% url 'cardapio:criar-pedido' %}" class="btn btn-success">Fazer Pedido</a>
+                        <a href="{% url 'cardapio:pedido-carrinho' %}" class="btn btn-success">Fazer Pedido</a>
                     </div>
                 </div>
             </div>

@@ -11,6 +11,8 @@ from .views import (
     HomeView,
     CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView,
     ItemCardapioListView, ItemCardapioCreateView, ItemCardapioUpdateView, ItemCardapioDeleteView,
+    CardapioClienteView,
+    PedidoCarrinhoView, PedidoConfirmadoView,
     CriarPedidoView, MeusPedidosView,
     FilaPedidosView, AtualizarStatusPedidoView, PainelGerenteView,
     PerfilView,
@@ -45,9 +47,16 @@ urlpatterns = [
     path('usuarios/', GerenciarUsuariosView.as_view(), name='gerenciar-usuarios'),
     path('usuarios/alterar/<int:pk>/', AlterarPerfilUsuarioView.as_view(), name='alterar-perfil-usuario'),
 
+    # ── Cardápio para o cliente ───────────────────────────────────────────────
+    path('cardapio/', CardapioClienteView.as_view(), name='cardapio-cliente'),
+
     # ── Pedidos do cliente ────────────────────────────────────────────────────
-    path('pedidos/novo/', CriarPedidoView.as_view(), name='criar-pedido'),
+    # Carrinho + pagamento — fluxo principal do cliente
+    path('pedido/', PedidoCarrinhoView.as_view(), name='pedido-carrinho'),
+    path('pedido/confirmado/<int:pk>/', PedidoConfirmadoView.as_view(), name='pedido-confirmado'),
     path('pedidos/meus/', MeusPedidosView.as_view(), name='meus-pedidos'),
+    # Fluxo legado (mantido para referência; não exposto na navegação do cliente)
+    path('pedidos/novo/', CriarPedidoView.as_view(), name='criar-pedido'),
 
     # ── Fila e gestão de pedidos (atendente e gerente) ───────────────────────
     path('pedidos/fila/', FilaPedidosView.as_view(), name='fila-pedidos'),

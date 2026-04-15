@@ -1,0 +1,98 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Pedido Confirmado!{% endblock %}
+
+{% block conteudo %}
+
+{# Alerta de sucesso no topo #}
+<div class="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-check-circle-fill fs-4"></i>
+    <strong>Seu pedido foi realizado com sucesso!</strong>
+</div>
+
+{# Card com os detalhes do pedido #}
+<div class="card mb-4">
+    <div class="card-header fw-bold">
+        Pedido #{{ pedido.pk }}
+    </div>
+    <div class="card-body">
+
+        {# Data e hora do pedido #}
+        <p class="mb-1">
+            <strong>Data/Hora:</strong>
+            {{ pedido.data_hora|date:"d/m/Y H:i" }}
+        </p>
+
+        {# Forma de pagamento — exibe "Cartão de Crédito" ou "Cartão de Débito" #}
+        <p class="mb-1">
+            <strong>Forma de pagamento:</strong>
+            {{ pedido.get_forma_pagamento_display }}
+        </p>
+
+        {# Cartão utilizado: apelido e número mascarado #}
+        {% if pedido.cartao_utilizado %}
+        <p class="mb-1">
+            <strong>Cartão:</strong>
+            {{ pedido.cartao_utilizado.apelido }} — {{ pedido.cartao_utilizado.numero_mascarado }}
+        </p>
+        {% endif %}
+
+        {# Badge de status de pagamento #}
+        <p class="mb-0">
+            <strong>Status do pagamento:</strong>
+            {% if pedido.status_pagamento == 'pago' %}
+                <span class="badge bg-success">{{ pedido.get_status_pagamento_display }}</span>
+            {% elif pedido.status_pagamento == 'pendente' %}
+                <span class="badge bg-warning text-dark">{{ pedido.get_status_pagamento_display }}</span>
+            {% else %}
+                <span class="badge bg-danger">{{ pedido.get_status_pagamento_display }}</span>
+            {% endif %}
+        </p>
+
+    </div>
+</div>
+
+{# Tabela de itens do pedido com total #}
+<div class="card mb-4">
+    <div class="card-header fw-bold">Itens do Pedido</div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Item</th>
+                    <th class="text-center" style="width: 70px;">Qtd</th>
+                    <th class="text-end" style="width: 110px;">Preço unit.</th>
+                    <th class="text-end" style="width: 110px;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entrada in itens_confirmados %}
+                <tr>
+                    <td>{{ entrada.ip.item.nome }}</td>
+                    <td class="text-center">{{ entrada.ip.quantidade }}</td>
+                    <td class="text-end">R$ {{ entrada.ip.item.preco|floatformat:2 }}</td>
+                    <td class="text-end">R$ {{ entrada.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-light fw-bold">
+                    <td colspan="3" class="text-end">Total:</td>
+                    <td class="text-end">R$ {{ total|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{# Botões de ação após a confirmação #}
+<div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'cardapio:meus-pedidos' %}" class="btn btn-primary">
+        Ver Meus Pedidos
+    </a>
+    <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-outline-secondary">
+        Voltar ao Cardápio
+    </a>
+</div>
+
+{% endblock %}
