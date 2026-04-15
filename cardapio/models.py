@@ -156,10 +156,10 @@ class Pedido(models.Model):
 
     # ── Pagamento ─────────────────────────────────────────────────────────────
 
+    # Apenas cartão de crédito e débito são aceitos como forma de pagamento
     FORMA_PAGAMENTO_CHOICES = [
         ('cartao_credito', 'Cartão de Crédito'),
         ('cartao_debito',  'Cartão de Débito'),
-        ('pix',            'PIX'),
     ]
     STATUS_PAGAMENTO_CHOICES = [
         ('pendente',  'Pendente'),

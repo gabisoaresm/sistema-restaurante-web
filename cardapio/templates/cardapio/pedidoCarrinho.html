@@ -117,10 +117,17 @@
                             {% endif %}
                         </div>
 
-                        {# Botão de confirmação #}
-                        <button type="submit" class="btn btn-success btn-lg w-100">
+                        {# Botão de confirmação — mesmo tamanho que o link abaixo #}
+                        <button type="submit" class="btn btn-success w-100">
                             Confirmar Pedido
                         </button>
+
+                        {# Link secundário para cadastrar um novo cartão, sempre visível quando já há cartões #}
+                        <div class="mt-2">
+                            <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-outline-secondary w-100">
+                                Cadastrar novo cartão
+                            </a>
+                        </div>
                     {% endif %}
 
                 </div>{# fim card-body #}

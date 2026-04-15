@@ -9,8 +9,6 @@
 #   AtendenteMixin     → exige perfil 'atendente'
 #   ClienteMixin       → exige perfil 'cliente'
 # =============================================================================
-import random
-
 from django.views.generic.base import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404, redirect
@@ -656,41 +654,12 @@ class PedidoConfirmadoView(LoginRequiredMixin, ClienteMixin, View):
 class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
     """
     Exibe os itens disponíveis agrupados por categoria e formulário de pagamento (GET).
-    Cria o Pedido SOMENTE se o pagamento for confirmado (POST).
-
-    PIX (simulação em duas etapas, sem gateway real):
-      1) O cliente gera um código PIX simulado (POST com gerar_pix_simulado).
-      2) O código fica na sessão vinculado ao carrinho e às observações atuais;
-         ao confirmar (pagar_pix), o pedido é criado com forma_pagamento=PIX e
-         status_pagamento=pago, exibindo o mesmo código gerado.
+    Cria o Pedido SOMENTE se o pagamento for confirmado via cartão (POST).
 
     Cartão: POST com pagar_cartao — valida CVV do cartão salvo.
 
     Acesso: cliente. Template: criarPedido.html.
     """
-
-    # Chave da sessão: dados da simulação PIX antes de confirmar o pedido
-    SESSION_PIX_SIMULACAO = 'criar_pedido_pix_simulacao'
-
-    def _limpar_pix_sessao(self, request):
-        """Remove da sessão qualquer código PIX simulado pendente."""
-        request.session.pop(self.SESSION_PIX_SIMULACAO, None)
-
-    def _salvar_pix_sessao(self, request, codigo, snapshot_itens, observacoes):
-        """
-        Grava na sessão o código PIX simulado e um retrato dos itens/observações.
-        snapshot_itens: lista ordenada de [item_id, quantidade] (JSON-serializável).
-        """
-        request.session[self.SESSION_PIX_SIMULACAO] = {
-            'codigo': codigo,
-            'itens': snapshot_itens,
-            'observacoes': observacoes,
-        }
-        request.session.modified = True
-
-    def _snapshot_itens_post(self, itens_pedido):
-        """Monta retrato ordenado dos itens para comparar com o da sessão PIX."""
-        return sorted([[item.pk, qty] for item, qty in itens_pedido])
 
     def _carregar_categorias(self):
         """Retorna categorias com itens disponíveis pré-carregados (evita N+1 queries)."""
@@ -709,9 +678,6 @@ class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
         return form
 
     def get(self, request):
-        # Novo acesso à página: formulário de quantidades começa do zero —
-        # remove código PIX pendente para não confundir com carrinho vazio
-        self._limpar_pix_sessao(request)
         return render(request, 'cardapio/criarPedido.html', {
             'categorias':      self._carregar_categorias(),
             'formulario':      PedidoForm(),
@@ -736,12 +702,10 @@ class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
                 except (ValueError, ItemCardapio.DoesNotExist):
                     pass  # ignora campos inválidos ou itens indisponíveis
 
-        # Identifica qual ação de pagamento foi disparada
-        gerar_pix    = 'gerar_pix_simulado' in request.POST
-        pagar_pix    = 'pagar_pix' in request.POST
+        # Identifica se a ação de pagamento via cartão foi disparada
         pagar_cartao = 'pagar_cartao' in request.POST
 
-        def reexibir(erro=None, erro_cvv=None, erro_pix=None, abrir_pix=False, abrir_cartao=False):
+        def reexibir(erro=None, erro_cvv=None, abrir_cartao=False):
             """Reexibe o formulário de pedido mantendo os dados e exibindo mensagens."""
             ctx = {
                 'categorias':        self._carregar_categorias(),
@@ -750,85 +714,17 @@ class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
                 'cartoes_usuario':   CartaoSalvo.objects.filter(usuario=request.user),
                 'erro':              erro,
                 'erro_cvv':          erro_cvv,
-                'erro_pix':          erro_pix,
-                'abrir_pix':         abrir_pix,
                 'abrir_cartao':      abrir_cartao,
             }
-            pix_sess = request.session.get(self.SESSION_PIX_SIMULACAO)
-            if pix_sess and pix_sess.get('codigo'):
-                ctx['codigo_pix_simulado'] = pix_sess['codigo']
             return render(request, 'cardapio/criarPedido.html', ctx)
 
-        # ── Gerar código PIX simulado (não cria pedido) ───────────────────────
-        if gerar_pix:
-            if not itens_pedido:
-                return reexibir(
-                    erro='Selecione pelo menos um item com quantidade maior que zero.',
-                    abrir_pix=True,
-                )
-            if not formulario.is_valid():
-                return reexibir(abrir_pix=True)
-
-            obs = (formulario.cleaned_data.get('observacoes') or '').strip()
-            snapshot = self._snapshot_itens_post(itens_pedido)
-            # Código alfanumérico simulado (ambiente de demonstração)
-            codigo_pix = (
-                'PIXSIM'
-                f'{random.randint(100000, 999999)}'
-                f'{random.randint(100000, 999999)}'
-                f'{random.randint(10, 99)}'
-            )
-            self._salvar_pix_sessao(request, codigo_pix, snapshot, obs)
-            return reexibir(abrir_pix=True)
-
-        # Valida: pelo menos um item deve ser selecionado (fluxos de pagamento)
+        # Valida: pelo menos um item deve ser selecionado
         if not itens_pedido:
             return reexibir(erro='Selecione pelo menos um item com quantidade maior que zero.')
 
         # Valida o formulário de observações
         if not formulario.is_valid():
-            return reexibir(abrir_pix=pagar_pix, abrir_cartao=pagar_cartao)
-
-        # ── Pagamento via PIX (somente após gerar código na sessão) ───────────
-        if pagar_pix:
-            pix_sess = request.session.get(self.SESSION_PIX_SIMULACAO)
-            if not pix_sess or not pix_sess.get('codigo'):
-                return reexibir(
-                    erro_pix='Gere o código PIX simulado antes de confirmar o pagamento.',
-                    abrir_pix=True,
-                )
-
-            obs_atual = (formulario.cleaned_data.get('observacoes') or '').strip()
-            snapshot_atual = self._snapshot_itens_post(itens_pedido)
-            if (
-                snapshot_atual != pix_sess.get('itens')
-                or obs_atual != (pix_sess.get('observacoes') or '').strip()
-            ):
-                self._limpar_pix_sessao(request)
-                return reexibir(
-                    erro_pix='Itens ou observações foram alterados após gerar o PIX. Gere um novo código.',
-                    abrir_pix=True,
-                )
-
-            codigo_pix = pix_sess['codigo']
-            pedido = Pedido.objects.create(
-                cliente=request.user,
-                status='recebido',
-                observacoes=obs_atual,
-                forma_pagamento='pix',
-                status_pagamento='pago',
-            )
-            for item, quantidade in itens_pedido:
-                ItemPedido.objects.create(pedido=pedido, item=item, quantidade=quantidade)
-
-            total = sum(quantidade * item.preco for item, quantidade in itens_pedido)
-            self._limpar_pix_sessao(request)
-
-            return render(request, 'cardapio/pagamentoConfirmado.html', {
-                'pedido':     pedido,
-                'total':      total,
-                'codigo_pix': codigo_pix,
-            })
+            return reexibir(abrir_cartao=pagar_cartao)
 
         # ── Pagamento via Cartão Salvo ────────────────────────────────────────
         if pagar_cartao:

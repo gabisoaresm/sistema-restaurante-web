@@ -23,16 +23,7 @@
             <span class="badge bg-success">{{ pedido.get_status_pagamento_display }}</span>
         </p>
 
-        <!-- Código PIX simulado — exibido apenas para pagamentos via PIX -->
-        {% if codigo_pix %}
-        <div class="alert alert-info">
-            <strong>Código PIX gerado:</strong><br>
-            <code class="fs-5 user-select-all">{{ codigo_pix }}</code>
-            <div class="form-text mt-1">Pagamento PIX confirmado! Este é um código simulado.</div>
-        </div>
-        {% endif %}
-
-        <!-- Cartão utilizado — exibido apenas para pagamentos via cartão -->
+        <!-- Cartão utilizado — exibido para pagamentos via cartão -->
         {% if pedido.cartao_utilizado %}
         <p class="mb-3">
             <strong>Cartão:</strong>
