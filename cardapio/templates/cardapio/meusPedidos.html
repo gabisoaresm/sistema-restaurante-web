@@ -26,6 +26,22 @@
     </div>
 
     <div class="card-body">
+        <!-- Informações de pagamento -->
+        <div class="mb-3 d-flex align-items-center gap-3 flex-wrap">
+            {% if p.pedido.forma_pagamento %}
+                <span class="small text-muted">
+                    <strong>Pagamento:</strong> {{ p.pedido.get_forma_pagamento_display }}
+                </span>
+            {% endif %}
+            {% if p.pedido.status_pagamento == 'pago' %}
+                <span class="badge bg-success">{{ p.pedido.get_status_pagamento_display }}</span>
+            {% elif p.pedido.status_pagamento == 'pendente' %}
+                <span class="badge bg-warning text-dark">{{ p.pedido.get_status_pagamento_display }}</span>
+            {% elif p.pedido.status_pagamento == 'cancelado' %}
+                <span class="badge bg-danger">{{ p.pedido.get_status_pagamento_display }}</span>
+            {% endif %}
+        </div>
+
         {% if p.pedido.observacoes %}
             <p class="text-muted mb-3"><em>Observações: {{ p.pedido.observacoes }}</em></p>
         {% endif %}

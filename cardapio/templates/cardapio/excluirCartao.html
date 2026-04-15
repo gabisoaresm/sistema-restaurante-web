@@ -1,0 +1,29 @@
+{% extends 'cardapio/base.html' %}
+
+{% block titulo %}Excluir Cartão{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4">Excluir Cartão</h2>
+
+<div class="card mb-4" style="max-width: 400px;">
+    <div class="card-body">
+        <h5 class="card-title">{{ cartao.apelido }}</h5>
+        <p class="card-text text-muted">{{ cartao.numero_mascarado }}</p>
+        <p class="card-text small">
+            <strong>Bandeira:</strong> {{ cartao.get_bandeira_display }}<br>
+            <strong>Tipo:</strong> {{ cartao.get_tipo_display }}<br>
+            <strong>Validade:</strong> {{ cartao.validade }}
+        </p>
+    </div>
+</div>
+
+<p class="text-danger fw-semibold">Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.</p>
+
+<form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">
+        <i class="bi bi-trash me-1"></i>Confirmar Exclusão
+    </button>
+    <a href="{% url 'cardapio:meus-cartoes' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

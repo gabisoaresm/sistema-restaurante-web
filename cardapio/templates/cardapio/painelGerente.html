@@ -5,34 +5,52 @@
 {% block conteudo %}
 <h2 class="mb-3">Painel de Pedidos</h2>
 
-<!-- Filtros: status (links) + data (form GET) -->
-<div class="mb-4 d-flex flex-wrap align-items-center gap-2">
+<!-- Filtros: status do pedido + data + status de pagamento -->
+<div class="mb-4 d-flex flex-wrap align-items-start gap-3">
 
-    <!-- Filtro por status via links -->
+    <!-- Filtro por status do pedido via links -->
     <div>
-        <strong>Status:</strong>
-        <a href="{% url 'cardapio:painel-gerente' %}{% if data_filtro %}?data={{ data_filtro }}{% endif %}"
+        <div class="mb-1"><strong>Status do pedido:</strong></div>
+        <a href="{% url 'cardapio:painel-gerente' %}{% if data_filtro %}?data={{ data_filtro }}{% endif %}{% if status_pag_filtro %}&status_pag={{ status_pag_filtro }}{% endif %}"
            class="btn btn-sm ms-1 {% if not status_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">
             Todos
         </a>
         {% for valor, rotulo in status_choices %}
-        <a href="{% url 'cardapio:painel-gerente' %}?status={{ valor }}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
+        <a href="{% url 'cardapio:painel-gerente' %}?status={{ valor }}{% if data_filtro %}&data={{ data_filtro }}{% endif %}{% if status_pag_filtro %}&status_pag={{ status_pag_filtro }}{% endif %}"
            class="btn btn-sm ms-1 {% if status_filtro == valor %}btn-dark{% else %}btn-outline-dark{% endif %}">
             {{ rotulo }}
         </a>
         {% endfor %}
     </div>
 
+    <!-- Filtro por status de pagamento via links -->
+    <div>
+        <div class="mb-1"><strong>Status de pagamento:</strong></div>
+        <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
+           class="btn btn-sm ms-1 {% if not status_pag_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            Todos
+        </a>
+        {% for valor, rotulo in status_pag_choices %}
+        <a href="{% url 'cardapio:painel-gerente' %}?status_pag={{ valor }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
+           class="btn btn-sm ms-1 {% if status_pag_filtro == valor %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            {{ rotulo }}
+        </a>
+        {% endfor %}
+    </div>
+
     <!-- Filtro por data via form GET -->
-    <form method="get" action="{% url 'cardapio:painel-gerente' %}" class="d-flex align-items-center gap-2 ms-3">
+    <form method="get" action="{% url 'cardapio:painel-gerente' %}" class="d-flex align-items-center gap-2">
         {% if status_filtro %}
             <input type="hidden" name="status" value="{{ status_filtro }}">
+        {% endif %}
+        {% if status_pag_filtro %}
+            <input type="hidden" name="status_pag" value="{{ status_pag_filtro }}">
         {% endif %}
         <label for="data" class="mb-0"><strong>Data:</strong></label>
         <input type="date" id="data" name="data" value="{{ data_filtro }}" class="form-control form-control-sm" style="width: auto;">
         <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
         {% if data_filtro %}
-        <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}"
+        <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}{% if status_pag_filtro %}&status_pag={{ status_pag_filtro }}{% endif %}"
            class="btn btn-sm btn-outline-danger">✕ Limpar data</a>
         {% endif %}
     </form>
@@ -46,6 +64,8 @@
             <th>Data/Hora</th>
             <th>Cliente</th>
             <th>Status</th>
+            <th>Pagamento</th>
+            <th>Status Pag.</th>
             <th class="text-center">Qtd itens</th>
             <th class="text-end">Total</th>
             <th>Observações</th>
@@ -68,13 +88,29 @@
                     <span class="badge bg-secondary">{{ p.pedido.get_status_display }}</span>
                 {% endif %}
             </td>
+            <td class="small">
+                {% if p.pedido.forma_pagamento %}
+                    {{ p.pedido.get_forma_pagamento_display }}
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if p.pedido.status_pagamento == 'pago' %}
+                    <span class="badge bg-success">{{ p.pedido.get_status_pagamento_display }}</span>
+                {% elif p.pedido.status_pagamento == 'pendente' %}
+                    <span class="badge bg-warning text-dark">{{ p.pedido.get_status_pagamento_display }}</span>
+                {% elif p.pedido.status_pagamento == 'cancelado' %}
+                    <span class="badge bg-danger">{{ p.pedido.get_status_pagamento_display }}</span>
+                {% endif %}
+            </td>
             <td class="text-center">{{ p.pedido.itens.count }}</td>
             <td class="text-end">R$ {{ p.total }}</td>
             <td class="text-muted small">{{ p.pedido.observacoes|default:"-" }}</td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="7" class="text-center text-muted">Nenhum pedido encontrado.</td>
+            <td colspan="9" class="text-center text-muted">Nenhum pedido encontrado.</td>
         </tr>
         {% endfor %}
     </tbody>

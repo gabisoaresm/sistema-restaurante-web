@@ -9,9 +9,11 @@
 #   AtendenteMixin     → exige perfil 'atendente'
 #   ClienteMixin       → exige perfil 'cliente'
 # =============================================================================
+import random
+
 from django.views.generic.base import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth.views import PasswordResetView as DjangoPasswordResetView
@@ -20,8 +22,12 @@ from django.contrib.auth.forms import PasswordResetForm
 from django.db.models import Prefetch
 
 from django.contrib.auth.models import User
-from .models import Categoria, ItemCardapio, Perfil, Pedido, ItemPedido
-from .forms import CategoriaForm, ItemCardapioForm, RegistroForm, PedidoForm, PerfilUsuarioForm, AlterarPerfilForm
+from .models import Categoria, ItemCardapio, Perfil, Pedido, ItemPedido, CartaoSalvo
+from .forms import (
+    CategoriaForm, ItemCardapioForm, RegistroForm,
+    PedidoForm, PerfilUsuarioForm, AlterarPerfilForm,
+    CartaoForm, PagamentoCartaoSalvoForm,
+)
 
 
 # ──────────────────────────────────────────────
@@ -399,37 +405,80 @@ class PasswordResetView(DjangoPasswordResetView):
 
 class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
     """
-    Exibe os itens disponíveis agrupados por categoria (GET) e cria um
-    novo Pedido com seus ItensPedido ao submeter (POST).
+    Exibe os itens disponíveis agrupados por categoria e formulário de pagamento (GET).
+    Cria o Pedido SOMENTE se o pagamento for confirmado (POST).
+
+    PIX (simulação em duas etapas, sem gateway real):
+      1) O cliente gera um código PIX simulado (POST com gerar_pix_simulado).
+      2) O código fica na sessão vinculado ao carrinho e às observações atuais;
+         ao confirmar (pagar_pix), o pedido é criado com forma_pagamento=PIX e
+         status_pagamento=pago, exibindo o mesmo código gerado.
+
+    Cartão: POST com pagar_cartao — valida CVV do cartão salvo.
+
     Acesso: cliente. Template: criarPedido.html.
-    Os itens são enviados como campos 'item_ID' no POST; a view itera
-    sobre eles e cria um ItemPedido para cada quantidade > 0.
     """
 
-    def get(self, request):
-        # Categorias com seus itens disponíveis pré-carregados (evita N+1 queries)
-        categorias = Categoria.objects.prefetch_related(
+    # Chave da sessão: dados da simulação PIX antes de confirmar o pedido
+    SESSION_PIX_SIMULACAO = 'criar_pedido_pix_simulacao'
+
+    def _limpar_pix_sessao(self, request):
+        """Remove da sessão qualquer código PIX simulado pendente."""
+        request.session.pop(self.SESSION_PIX_SIMULACAO, None)
+
+    def _salvar_pix_sessao(self, request, codigo, snapshot_itens, observacoes):
+        """
+        Grava na sessão o código PIX simulado e um retrato dos itens/observações.
+        snapshot_itens: lista ordenada de [item_id, quantidade] (JSON-serializável).
+        """
+        request.session[self.SESSION_PIX_SIMULACAO] = {
+            'codigo': codigo,
+            'itens': snapshot_itens,
+            'observacoes': observacoes,
+        }
+        request.session.modified = True
+
+    def _snapshot_itens_post(self, itens_pedido):
+        """Monta retrato ordenado dos itens para comparar com o da sessão PIX."""
+        return sorted([[item.pk, qty] for item, qty in itens_pedido])
+
+    def _carregar_categorias(self):
+        """Retorna categorias com itens disponíveis pré-carregados (evita N+1 queries)."""
+        return Categoria.objects.prefetch_related(
             Prefetch(
                 'itemcardapio_set',
                 queryset=ItemCardapio.objects.filter(disponivel=True),
                 to_attr='itens_disponiveis',
             )
         )
-        formulario = PedidoForm()
+
+    def _form_cartao_salvo(self, request, data=None):
+        """Cria PagamentoCartaoSalvoForm com queryset filtrado para o usuário logado."""
+        form = PagamentoCartaoSalvoForm(data)
+        form.fields['cartao'].queryset = CartaoSalvo.objects.filter(usuario=request.user)
+        return form
+
+    def get(self, request):
+        # Novo acesso à página: formulário de quantidades começa do zero —
+        # remove código PIX pendente para não confundir com carrinho vazio
+        self._limpar_pix_sessao(request)
         return render(request, 'cardapio/criarPedido.html', {
-            'categorias': categorias,
-            'formulario': formulario,
+            'categorias':      self._carregar_categorias(),
+            'formulario':      PedidoForm(),
+            'form_cartao_salvo': self._form_cartao_salvo(request),
+            'cartoes_usuario': CartaoSalvo.objects.filter(usuario=request.user),
         })
 
     def post(self, request):
-        formulario = PedidoForm(request.POST)
+        formulario   = PedidoForm(request.POST)
+        form_cartao  = self._form_cartao_salvo(request, data=request.POST)
 
         # Coleta os itens selecionados: campos cujo nome começa com "item_"
         itens_pedido = []
         for chave, valor in request.POST.items():
             if chave.startswith('item_'):
                 try:
-                    item_id = int(chave[5:])   # remove o prefixo "item_"
+                    item_id   = int(chave[5:])   # remove o prefixo "item_"
                     quantidade = int(valor)
                     if quantidade > 0:
                         item = ItemCardapio.objects.get(pk=item_id, disponivel=True)
@@ -437,46 +486,144 @@ class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
                 except (ValueError, ItemCardapio.DoesNotExist):
                     pass  # ignora campos inválidos ou itens indisponíveis
 
-        if not itens_pedido:
-            # Nenhum item selecionado: reexibe o formulário com aviso
-            categorias = Categoria.objects.prefetch_related(
-                Prefetch(
-                    'itemcardapio_set',
-                    queryset=ItemCardapio.objects.filter(disponivel=True),
-                    to_attr='itens_disponiveis',
+        # Identifica qual ação de pagamento foi disparada
+        gerar_pix    = 'gerar_pix_simulado' in request.POST
+        pagar_pix    = 'pagar_pix' in request.POST
+        pagar_cartao = 'pagar_cartao' in request.POST
+
+        def reexibir(erro=None, erro_cvv=None, erro_pix=None, abrir_pix=False, abrir_cartao=False):
+            """Reexibe o formulário de pedido mantendo os dados e exibindo mensagens."""
+            ctx = {
+                'categorias':        self._carregar_categorias(),
+                'formulario':        formulario,
+                'form_cartao_salvo': form_cartao,
+                'cartoes_usuario':   CartaoSalvo.objects.filter(usuario=request.user),
+                'erro':              erro,
+                'erro_cvv':          erro_cvv,
+                'erro_pix':          erro_pix,
+                'abrir_pix':         abrir_pix,
+                'abrir_cartao':      abrir_cartao,
+            }
+            pix_sess = request.session.get(self.SESSION_PIX_SIMULACAO)
+            if pix_sess and pix_sess.get('codigo'):
+                ctx['codigo_pix_simulado'] = pix_sess['codigo']
+            return render(request, 'cardapio/criarPedido.html', ctx)
+
+        # ── Gerar código PIX simulado (não cria pedido) ───────────────────────
+        if gerar_pix:
+            if not itens_pedido:
+                return reexibir(
+                    erro='Selecione pelo menos um item com quantidade maior que zero.',
+                    abrir_pix=True,
                 )
+            if not formulario.is_valid():
+                return reexibir(abrir_pix=True)
+
+            obs = (formulario.cleaned_data.get('observacoes') or '').strip()
+            snapshot = self._snapshot_itens_post(itens_pedido)
+            # Código alfanumérico simulado (ambiente de demonstração)
+            codigo_pix = (
+                'PIXSIM'
+                f'{random.randint(100000, 999999)}'
+                f'{random.randint(100000, 999999)}'
+                f'{random.randint(10, 99)}'
             )
-            return render(request, 'cardapio/criarPedido.html', {
-                'categorias': categorias,
-                'formulario': formulario,
-                'erro': 'Selecione pelo menos um item com quantidade maior que zero.',
+            self._salvar_pix_sessao(request, codigo_pix, snapshot, obs)
+            return reexibir(abrir_pix=True)
+
+        # Valida: pelo menos um item deve ser selecionado (fluxos de pagamento)
+        if not itens_pedido:
+            return reexibir(erro='Selecione pelo menos um item com quantidade maior que zero.')
+
+        # Valida o formulário de observações
+        if not formulario.is_valid():
+            return reexibir(abrir_pix=pagar_pix, abrir_cartao=pagar_cartao)
+
+        # ── Pagamento via PIX (somente após gerar código na sessão) ───────────
+        if pagar_pix:
+            pix_sess = request.session.get(self.SESSION_PIX_SIMULACAO)
+            if not pix_sess or not pix_sess.get('codigo'):
+                return reexibir(
+                    erro_pix='Gere o código PIX simulado antes de confirmar o pagamento.',
+                    abrir_pix=True,
+                )
+
+            obs_atual = (formulario.cleaned_data.get('observacoes') or '').strip()
+            snapshot_atual = self._snapshot_itens_post(itens_pedido)
+            if (
+                snapshot_atual != pix_sess.get('itens')
+                or obs_atual != (pix_sess.get('observacoes') or '').strip()
+            ):
+                self._limpar_pix_sessao(request)
+                return reexibir(
+                    erro_pix='Itens ou observações foram alterados após gerar o PIX. Gere um novo código.',
+                    abrir_pix=True,
+                )
+
+            codigo_pix = pix_sess['codigo']
+            pedido = Pedido.objects.create(
+                cliente=request.user,
+                status='recebido',
+                observacoes=obs_atual,
+                forma_pagamento='pix',
+                status_pagamento='pago',
+            )
+            for item, quantidade in itens_pedido:
+                ItemPedido.objects.create(pedido=pedido, item=item, quantidade=quantidade)
+
+            total = sum(quantidade * item.preco for item, quantidade in itens_pedido)
+            self._limpar_pix_sessao(request)
+
+            return render(request, 'cardapio/pagamentoConfirmado.html', {
+                'pedido':     pedido,
+                'total':      total,
+                'codigo_pix': codigo_pix,
             })
 
-        if formulario.is_valid():
-            # Cria o pedido vinculado ao cliente logado
+        # ── Pagamento via Cartão Salvo ────────────────────────────────────────
+        if pagar_cartao:
+            if not form_cartao.is_valid():
+                return reexibir(abrir_cartao=True)
+
+            cartao       = form_cartao.cleaned_data['cartao']
+            cvv_digitado = form_cartao.cleaned_data['cvv']
+
+            # Segurança: garante que o cartão pertence ao usuário logado
+            if cartao.usuario != request.user:
+                return reexibir(erro_cvv='Cartão inválido.', abrir_cartao=True)
+
+            # Verifica se o CVV digitado corresponde ao CVV salvo no cartão
+            if cartao.cvv != cvv_digitado:
+                return reexibir(
+                    erro_cvv='CVV incorreto. Verifique o código de segurança do cartão.',
+                    abrir_cartao=True,
+                )
+
+            # Determina forma_pagamento conforme o tipo do cartão (crédito ou débito)
+            forma = 'cartao_credito' if cartao.tipo == 'credito' else 'cartao_debito'
+
             pedido = Pedido.objects.create(
                 cliente=request.user,
                 status='recebido',
                 observacoes=formulario.cleaned_data.get('observacoes') or '',
+                forma_pagamento=forma,
+                status_pagamento='pago',
+                cartao_utilizado=cartao,
             )
-            # Cria um ItemPedido para cada item selecionado
             for item, quantidade in itens_pedido:
                 ItemPedido.objects.create(pedido=pedido, item=item, quantidade=quantidade)
 
-            return HttpResponseRedirect(reverse_lazy('cardapio:meus-pedidos'))
+            total = sum(quantidade * item.preco for item, quantidade in itens_pedido)
 
-        # Formulário inválido: reexibe com erros
-        categorias = Categoria.objects.prefetch_related(
-            Prefetch(
-                'itemcardapio_set',
-                queryset=ItemCardapio.objects.filter(disponivel=True),
-                to_attr='itens_disponiveis',
-            )
+            return render(request, 'cardapio/pagamentoConfirmado.html', {
+                'pedido': pedido,
+                'total':  total,
+            })
+
+        # Nenhum botão de pagamento reconhecido — reexibe o formulário com aviso
+        return reexibir(
+            erro='Selecione uma forma de pagamento para confirmar o pedido.',
         )
-        return render(request, 'cardapio/criarPedido.html', {
-            'categorias': categorias,
-            'formulario': formulario,
-        })
 
 
 class MeusPedidosView(LoginRequiredMixin, ClienteMixin, View):
@@ -570,7 +717,7 @@ class AtualizarStatusPedidoView(LoginRequiredMixin, AtendenteMixin, View):
 class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
     """
     Exibe todos os pedidos em tabela para o gerente (GET).
-    Aceita filtros combinados: ?status=VALOR e ?data=AAAA-MM-DD.
+    Aceita filtros combinados: ?status=VALOR, ?data=AAAA-MM-DD e ?status_pag=VALOR.
     Calcula o total de cada pedido na view (templates não fazem multiplicação).
     Acesso: gerente. Template: painelGerente.html.
     """
@@ -578,7 +725,7 @@ class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
     def get(self, request):
         pedidos_qs = Pedido.objects.prefetch_related('itens__item').select_related('cliente')
 
-        # Filtro por status via query string (?status=VALOR)
+        # Filtro por status do pedido via query string (?status=VALOR)
         status_filtro = request.GET.get('status')
         if status_filtro:
             pedidos_qs = pedidos_qs.filter(status=status_filtro)
@@ -588,6 +735,11 @@ class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
         if data_filtro:
             pedidos_qs = pedidos_qs.filter(data_hora__date=data_filtro)
 
+        # Filtro por status de pagamento via query string (?status_pag=VALOR)
+        status_pag_filtro = request.GET.get('status_pag')
+        if status_pag_filtro:
+            pedidos_qs = pedidos_qs.filter(status_pagamento=status_pag_filtro)
+
         # Calcula o total de cada pedido na view (templates não fazem multiplicação)
         pedidos = []
         for pedido in pedidos_qs:
@@ -595,8 +747,80 @@ class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
             pedidos.append({'pedido': pedido, 'total': total})
 
         return render(request, 'cardapio/painelGerente.html', {
-            'pedidos': pedidos,
-            'status_choices': Pedido.STATUS_CHOICES,
-            'status_filtro': status_filtro,
-            'data_filtro': data_filtro or '',
+            'pedidos':              pedidos,
+            'status_choices':       Pedido.STATUS_CHOICES,
+            'status_filtro':        status_filtro,
+            'data_filtro':          data_filtro or '',
+            'status_pag_filtro':    status_pag_filtro,
+            'status_pag_choices':   Pedido.STATUS_PAGAMENTO_CHOICES,
         })
+
+
+# ──────────────────────────────────────────────
+# Cartões salvos do cliente
+# ──────────────────────────────────────────────
+
+class MeusCartoesView(LoginRequiredMixin, ClienteMixin, View):
+    """
+    Lista os cartões salvos do cliente logado (GET).
+    Acesso: cliente. Template: meusCartoes.html.
+    """
+
+    def get(self, request):
+        cartoes = request.user.cartoes.all()
+        return render(request, 'cardapio/meusCartoes.html', {'cartoes': cartoes})
+
+
+class AdicionarCartaoView(LoginRequiredMixin, ClienteMixin, View):
+    """
+    Exibe formulário para cadastrar novo cartão (GET).
+    Valida, mascara o número e persiste o CartaoSalvo (POST).
+    O número completo é descartado após extrair os últimos 4 dígitos —
+    nunca é salvo no banco.
+    Acesso: cliente. Template: adicionarCartao.html.
+    """
+
+    def get(self, request):
+        return render(request, 'cardapio/adicionarCartao.html', {'formulario': CartaoForm()})
+
+    def post(self, request):
+        form = CartaoForm(request.POST)
+        if form.is_valid():
+            dados = form.cleaned_data
+            numero = dados['numero_cartao']
+            CartaoSalvo.objects.create(
+                usuario=request.user,
+                apelido=dados['apelido'],
+                nome_titular=dados['nome_titular'],
+                # Número completo descartado — apenas os últimos 4 dígitos são salvos
+                numero_mascarado=f'**** **** **** {numero[-4:]}',
+                bandeira=dados['bandeira'],
+                tipo=dados['tipo'],
+                validade=dados['validade'],
+                cvv=dados['cvv'],
+            )
+            return redirect('cardapio:meus-cartoes')
+        return render(request, 'cardapio/adicionarCartao.html', {'formulario': form})
+
+
+class ExcluirCartaoView(LoginRequiredMixin, ClienteMixin, View):
+    """
+    Exibe confirmação antes de excluir o cartão (GET).
+    Deleta o CartaoSalvo e redireciona (POST).
+    A verificação usuario=request.user garante que o cliente
+    só pode excluir seus próprios cartões.
+    Acesso: cliente. Template: excluirCartao.html.
+    """
+
+    def _get_cartao(self, request, pk):
+        # Garante que o cliente só acessa cartões próprios — outros retornam 404
+        return get_object_or_404(CartaoSalvo, pk=pk, usuario=request.user)
+
+    def get(self, request, pk):
+        cartao = self._get_cartao(request, pk)
+        return render(request, 'cardapio/excluirCartao.html', {'cartao': cartao})
+
+    def post(self, request, pk):
+        cartao = self._get_cartao(request, pk)
+        cartao.delete()
+        return redirect('cardapio:meus-cartoes')

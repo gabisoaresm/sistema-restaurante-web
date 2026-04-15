@@ -49,7 +49,7 @@
     {% endfor %}
 
     <!-- Campo de observações -->
-    <div class="mt-4 mb-3">
+    <div class="mt-4 mb-4">
         <label for="id_observacoes" class="form-label fw-bold">{{ formulario.observacoes.label }}</label>
         {{ formulario.observacoes }}
         {% if formulario.observacoes.errors %}
@@ -61,7 +61,114 @@
         {% endif %}
     </div>
 
-    <button type="submit" class="btn btn-primary">Confirmar Pedido</button>
-    <a href="{% url 'cardapio:meus-pedidos' %}" class="btn btn-secondary ms-2">Cancelar</a>
+    <!-- Seção de pagamento — cada opção em <details> (expansível nativo do HTML, sem JavaScript) -->
+    <h4 class="mb-3">Pagamento</h4>
+
+    {% if erro_pix %}
+        <div class="alert alert-warning">{{ erro_pix }}</div>
+    {% endif %}
+
+    {# align-items-start: colunas não esticam na altura uma da outra #}
+    <div class="row g-3 mb-4 align-items-start">
+
+        <!-- PIX — painel independente -->
+        <div class="col-12 col-md-6 align-self-start">
+            <details class="card shadow-sm pagamento-detalhe"{% if abrir_pix %} open{% endif %}>
+                <summary class="card-header fw-bold pagamento-detalhe-sumario">
+                    <span><i class="bi bi-qr-code me-1"></i>PIX</span>
+                    <span class="small text-muted fw-normal">(clique para abrir ou fechar)</span>
+                </summary>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Simulação: primeiro gere um código PIX fictício; em seguida confirme o pedido.
+                        O pagamento será registrado como <strong>PIX</strong> e <strong>confirmado</strong> no sistema.
+                    </p>
+
+                    {% if codigo_pix_simulado %}
+                        <div class="alert alert-info py-2 mb-3">
+                            <strong class="d-block mb-1">Código PIX simulado:</strong>
+                            <code class="user-select-all d-block small">{{ codigo_pix_simulado }}</code>
+                            <span class="form-text d-block mt-2 mb-0">
+                                Confira os itens e as observações acima e confirme para finalizar o pedido.
+                            </span>
+                        </div>
+                    {% else %}
+                        <p class="small text-muted mb-3">
+                            Selecione as quantidades, preencha as observações se quiser e clique em
+                            <strong>Gerar código PIX simulado</strong>.
+                        </p>
+                    {% endif %}
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" name="gerar_pix_simulado" value="1" class="btn btn-outline-success">
+                            Gerar código PIX simulado
+                        </button>
+                        <button type="submit" name="pagar_pix" value="1" class="btn btn-success">
+                            Confirmar e pagar com PIX
+                        </button>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Cartão — painel independente -->
+        <div class="col-12 col-md-6 align-self-start">
+            <details class="card shadow-sm pagamento-detalhe"{% if abrir_cartao %} open{% endif %}>
+                <summary class="card-header fw-bold pagamento-detalhe-sumario">
+                    <span><i class="bi bi-credit-card me-1"></i>Cartão</span>
+                    <span class="small text-muted fw-normal">(clique para abrir ou fechar)</span>
+                </summary>
+                <div class="card-body">
+
+                    {% if erro_cvv %}
+                        <div class="alert alert-danger py-2 small">{{ erro_cvv }}</div>
+                    {% endif %}
+
+                    {% if cartoes_usuario %}
+                        <!-- Select de cartões salvos -->
+                        <div class="mb-3">
+                            <label for="{{ form_cartao_salvo.cartao.id_for_label }}" class="form-label">
+                                {{ form_cartao_salvo.cartao.label }}
+                            </label>
+                            {{ form_cartao_salvo.cartao }}
+                            {% for erro in form_cartao_salvo.cartao.errors %}
+                                <div class="text-danger small mt-1">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Campo CVV -->
+                        <div class="mb-3">
+                            <label for="{{ form_cartao_salvo.cvv.id_for_label }}" class="form-label">
+                                {{ form_cartao_salvo.cvv.label }}
+                            </label>
+                            <div>{{ form_cartao_salvo.cvv }}</div>
+                            <div class="form-text">{{ form_cartao_salvo.cvv.help_text }}</div>
+                            {% for erro in form_cartao_salvo.cvv.errors %}
+                                <div class="text-danger small mt-1">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" name="pagar_cartao" value="1" class="btn btn-primary">
+                            Confirmar e pagar com cartão
+                        </button>
+
+                    {% else %}
+                        <p class="text-muted mb-3">Você não tem cartões salvos.</p>
+                    {% endif %}
+
+                    <!-- Link para cadastrar novo cartão sempre visível -->
+                    <div class="mt-3">
+                        <a href="{% url 'cardapio:adicionar-cartao' %}" class="small">
+                            <i class="bi bi-plus-circle me-1"></i>Cadastrar novo cartão
+                        </a>
+                    </div>
+
+                </div>
+            </details>
+        </div>
+
+    </div>
+
+    <a href="{% url 'cardapio:meus-pedidos' %}" class="btn btn-secondary">Cancelar</a>
 </form>
 {% endblock %}

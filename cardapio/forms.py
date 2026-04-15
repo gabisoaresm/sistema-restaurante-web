@@ -12,7 +12,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Categoria, ItemCardapio, Pedido
+from .models import Categoria, ItemCardapio, Pedido, CartaoSalvo
 
 
 # ── Formulários do cardápio ───────────────────────────────────────────────────
@@ -57,6 +57,77 @@ class PedidoForm(forms.ModelForm):
         labels = {
             'observacoes': 'Observações (opcional)',
         }
+
+
+# ── Formulário de pagamento com cartão salvo ─────────────────────────────────
+
+class PagamentoCartaoSalvoForm(forms.Form):
+    """
+    Formulário de pagamento com cartão salvo.
+    Usado na tela de criação de pedido para o cliente escolher um cartão
+    e informar o CVV para confirmar o pagamento.
+    O queryset de cartao é sobrescrito na view para mostrar apenas
+    os cartões do usuário logado.
+    """
+
+    cartao = forms.ModelChoiceField(
+        queryset=CartaoSalvo.objects.none(),  # filtrado por usuário na view
+        label='Cartão',
+        empty_label='— Selecione um cartão —',
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+    )
+    cvv = forms.CharField(
+        max_length=4,
+        label='CVV',
+        help_text='Informe o CVV do cartão para confirmar',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'CVV',
+            'inputmode': 'numeric',
+            'style': 'width: 80px',
+        }),
+    )
+
+
+# ── Formulário de cartão salvo ────────────────────────────────────────────────
+
+class CartaoForm(forms.Form):
+    """
+    Formulário para cadastro de novo cartão salvo pelo cliente.
+    O número completo (numero_cartao) é usado apenas para extrair os últimos
+    4 dígitos e gerar numero_mascarado — nunca é persistido no banco.
+    O CVV é salvo para validação posterior no momento do pagamento.
+    """
+
+    BANDEIRA_CHOICES = [
+        ('visa',       'Visa'),
+        ('mastercard', 'Mastercard'),
+        ('elo',        'Elo'),
+        ('amex',       'American Express'),
+    ]
+    TIPO_CHOICES = [
+        ('credito', 'Crédito'),
+        ('debito',  'Débito'),
+    ]
+
+    apelido      = forms.CharField(max_length=50, label='Apelido',
+                                   widget=forms.TextInput(attrs={'class': 'form-control'}))
+    nome_titular = forms.CharField(max_length=200, label='Nome do titular',
+                                   widget=forms.TextInput(attrs={'class': 'form-control'}))
+    numero_cartao = forms.CharField(
+        max_length=16,
+        label='Número do cartão',
+        help_text='Apenas números, sem espaços',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'numeric'}),
+    )
+    bandeira = forms.ChoiceField(choices=BANDEIRA_CHOICES, label='Bandeira',
+                                 widget=forms.Select(attrs={'class': 'form-select'}))
+    tipo     = forms.ChoiceField(choices=TIPO_CHOICES, label='Tipo',
+                                 widget=forms.Select(attrs={'class': 'form-select'}))
+    validade = forms.CharField(max_length=7, label='Validade', help_text='MM/AAAA',
+                               widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'MM/AAAA'}))
+    cvv      = forms.CharField(max_length=4, label='CVV',
+                               widget=forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'numeric', 'style': 'width: 100px'}))
 
 
 # ── Formulários de autenticação e perfil ─────────────────────────────────────

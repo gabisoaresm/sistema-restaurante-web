@@ -15,6 +15,7 @@ from .views import (
     FilaPedidosView, AtualizarStatusPedidoView, PainelGerenteView,
     PerfilView,
     GerenciarUsuariosView, AlterarPerfilUsuarioView,
+    MeusCartoesView, AdicionarCartaoView, ExcluirCartaoView,
 )
 
 # Namespace do app — obrigatório para {% url 'cardapio:...' %} funcionar
@@ -52,4 +53,9 @@ urlpatterns = [
     path('pedidos/fila/', FilaPedidosView.as_view(), name='fila-pedidos'),
     path('pedidos/status/<int:pk>/', AtualizarStatusPedidoView.as_view(), name='atualizar-status'),
     path('pedidos/painel/', PainelGerenteView.as_view(), name='painel-gerente'),
+
+    # ── Cartões salvos do cliente ─────────────────────────────────────────────
+    path('cartoes/', MeusCartoesView.as_view(), name='meus-cartoes'),
+    path('cartoes/adicionar/', AdicionarCartaoView.as_view(), name='adicionar-cartao'),
+    path('cartoes/excluir/<int:pk>/', ExcluirCartaoView.as_view(), name='excluir-cartao'),
 ]

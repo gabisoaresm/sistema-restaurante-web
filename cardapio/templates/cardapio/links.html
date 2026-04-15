@@ -59,6 +59,10 @@
                             <a class="nav-link {% if request.resolver_match.url_name == 'criar-pedido' %}active{% endif %}"
                                href="{% url 'cardapio:criar-pedido' %}">Novo Pedido</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'cartao' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'cardapio:meus-cartoes' %}">Meus Cartões</a>
+                        </li>
                     {% endif %}
                 {% endif %}
             </ul>

@@ -50,3 +50,33 @@
 body {
     padding-bottom: 40px;
 }
+
+
+/* ── Pagamento (novo pedido): <details> estilo card, expansível sem JavaScript ─ */
+
+/* Cada opção (PIX / cartão) é um bloco com altura só do próprio conteúdo */
+.pagamento-detalhe {
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.375rem;
+}
+
+/* Cabeçalho clicável do painel recolhível */
+.pagamento-detalhe-sumario {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+/* Remove o marcador padrão do <summary> (navegadores WebKit / Firefox) */
+.pagamento-detalhe-sumario::-webkit-details-marker {
+    display: none;
+}
+
+.pagamento-detalhe-sumario::marker {
+    content: '';
+}

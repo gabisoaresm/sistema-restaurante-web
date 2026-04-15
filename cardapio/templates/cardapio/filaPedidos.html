@@ -42,6 +42,22 @@
     </div>
 
     <div class="card-body">
+        <!-- Informações de pagamento -->
+        <div class="mb-2 d-flex align-items-center gap-3 flex-wrap">
+            {% if pedido.forma_pagamento %}
+                <span class="small text-muted">
+                    <strong>Pagamento:</strong> {{ pedido.get_forma_pagamento_display }}
+                </span>
+            {% endif %}
+            {% if pedido.status_pagamento == 'pago' %}
+                <span class="badge bg-success">{{ pedido.get_status_pagamento_display }}</span>
+            {% elif pedido.status_pagamento == 'pendente' %}
+                <span class="badge bg-warning text-dark">{{ pedido.get_status_pagamento_display }}</span>
+            {% elif pedido.status_pagamento == 'cancelado' %}
+                <span class="badge bg-danger">{{ pedido.get_status_pagamento_display }}</span>
+            {% endif %}
+        </div>
+
         {% if pedido.observacoes %}
             <p class="text-muted mb-2"><em>Obs: {{ pedido.observacoes }}</em></p>
         {% endif %}
