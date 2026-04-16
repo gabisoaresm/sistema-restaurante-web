@@ -9,6 +9,7 @@
 from django.urls import path
 from .views import (
     HomeView,
+    RedirecionarAposLoginView,
     CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView,
     ItemCardapioListView, ItemCardapioCreateView, ItemCardapioUpdateView, ItemCardapioDeleteView,
     CardapioClienteView,
@@ -27,6 +28,10 @@ urlpatterns = [
 
     # ── Página inicial ────────────────────────────────────────────────────────
     path('', HomeView.as_view(), name='home'),
+
+    # ── Redirecionamento pós-login ────────────────────────────────────────────
+    # Verifica o perfil do usuário e envia para a página correta
+    path('redirecionar/', RedirecionarAposLoginView.as_view(), name='redirecionar-apos-login'),
 
     # ── CRUD de Categoria (só gerente) ───────────────────────────────────────
     path('categorias/', CategoriaListView.as_view(), name='lista-categorias'),

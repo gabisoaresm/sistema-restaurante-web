@@ -3,131 +3,165 @@
 {% block titulo %}Restaurante — Home{% endblock %}
 
 {% block conteudo %}
-{# Cabeçalho de boas-vindas #}
-<div class="row mt-2 mb-4">
-    <div class="col-12">
-        <h1>Bem-vindo ao Restaurante 🍽</h1>
-        <p class="lead text-muted">
-            {% if user.is_authenticated %}
-                {# Usa o primeiro nome se preenchido; caso contrário usa o username #}
-                <strong>{% firstof user.first_name user.username %}</strong>, o que deseja fazer hoje?
-            {% else %}
-                Faça login para acessar o sistema.
-            {% endif %}
+
+{% if not user.is_authenticated %}
+{# ── Hero: visitante não autenticado ────────────────────────────────────── #}
+<div class="row justify-content-center mt-5">
+    <div class="col-sm-10 col-md-7 col-lg-5 text-center">
+
+        <i class="bi bi-shop fs-1 text-success"></i>
+        <h1 class="mt-3 fw-bold">Bem-vindo ao Restaurante</h1>
+        <p class="lead text-muted mt-2">
+            Faça login para acessar o cardápio, realizar pedidos e acompanhar o atendimento.
         </p>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-4">
+            <a href="{% url 'login' %}" class="btn btn-success btn-lg px-5">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Entrar
+            </a>
+            <a href="{% url 'registro' %}" class="btn btn-outline-success btn-lg px-5">
+                <i class="bi bi-person-plus me-1"></i>Criar Conta
+            </a>
+        </div>
+
     </div>
 </div>
 
-{# Cards de ação — exibidos conforme o perfil do usuário #}
-<div class="row g-3">
+{% else %}
+{# ── Saudação para usuário autenticado ──────────────────────────────────── #}
+<div class="mb-4">
+    <h4 class="fw-semibold">
+        Olá, {% firstof user.first_name user.username %} 👋
+    </h4>
+    <p class="text-muted">O que deseja fazer hoje?</p>
+</div>
 
-    {% if user.is_authenticated %}
+{# ── Cards de ação por perfil ────────────────────────────────────────────── #}
 
-        {% if user.perfil.tipo == 'gerente' %}
-        {# ── Gerente: CRUD do cardápio e painel de pedidos ── #}
+{% if user.perfil.tipo == 'gerente' %}
+{# ── Gerente: CRUD do cardápio, painel de pedidos e gestão de usuários ── #}
+<div class="row g-4 justify-content-center mx-auto" style="max-width: 780px;">
 
-            <div class="col-md-4">
-                <div class="card h-100 border-primary">
-                    <div class="card-body">
-                        <h5 class="card-title">📋 Categorias</h5>
-                        <p class="card-text text-muted">Adicione, edite ou remova categorias do cardápio.</p>
-                        <a href="{% url 'cardapio:lista-categorias' %}" class="btn btn-primary">Gerenciar Categorias</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 border-primary">
-                    <div class="card-body">
-                        <h5 class="card-title">🍕 Cardápio</h5>
-                        <p class="card-text text-muted">Gerencie os itens disponíveis no cardápio.</p>
-                        <a href="{% url 'cardapio:lista-itens' %}" class="btn btn-primary">Gerenciar Cardápio</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 border-primary">
-                    <div class="card-body">
-                        <h5 class="card-title">📊 Painel de Pedidos</h5>
-                        <p class="card-text text-muted">Visualize todos os pedidos com filtros por status e data.</p>
-                        <a href="{% url 'cardapio:painel-gerente' %}" class="btn btn-primary">Ver Painel</a>
-                    </div>
-                </div>
-            </div>
-
-        {% elif user.perfil.tipo == 'atendente' %}
-        {# ── Atendente: fila de pedidos para atualizar status ── #}
-
-            <div class="col-md-6">
-                <div class="card h-100 border-warning">
-                    <div class="card-body">
-                        <h5 class="card-title">🔔 Fila de Pedidos</h5>
-                        <p class="card-text text-muted">Veja os pedidos pendentes e atualize o status de cada um.</p>
-                        <a href="{% url 'cardapio:fila-pedidos' %}" class="btn btn-warning">Abrir Fila</a>
-                    </div>
-                </div>
-            </div>
-
-        {% elif user.perfil.tipo == 'cliente' %}
-        {# ── Cliente: ver cardápio, fazer e acompanhar pedidos ── #}
-
-            <div class="col-md-4">
-                <div class="card h-100 border-success">
-                    <div class="card-body">
-                        <h5 class="card-title">🍽 Cardápio</h5>
-                        <p class="card-text text-muted">Consulte os itens disponíveis no cardápio do restaurante.</p>
-                        <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success">Ver Cardápio</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 border-success">
-                    <div class="card-body">
-                        <h5 class="card-title">🛒 Novo Pedido</h5>
-                        <p class="card-text text-muted">Selecione itens do cardápio e faça um novo pedido.</p>
-                        <a href="{% url 'cardapio:pedido-carrinho' %}" class="btn btn-success">Fazer Pedido</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 border-success">
-                    <div class="card-body">
-                        <h5 class="card-title">📦 Meus Pedidos</h5>
-                        <p class="card-text text-muted">Acompanhe o status dos seus pedidos em tempo real.</p>
-                        <a href="{% url 'cardapio:meus-pedidos' %}" class="btn btn-success">Ver Pedidos</a>
-                    </div>
-                </div>
-            </div>
-
-        {% endif %}
-
-    {% else %}
-    {# ── Usuário não autenticado: convite para login ou registro ── #}
-
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">🔑 Login</h5>
-                    <p class="card-text text-muted">Acesse o sistema com sua conta.</p>
-                    <a href="{% url 'login' %}" class="btn btn-primary">Entrar</a>
-                </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-tags fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Categorias</h5>
+                <p class="card-text text-muted flex-grow-1">Adicione, edite ou remova categorias do cardápio.</p>
+                <a href="{% url 'cardapio:lista-categorias' %}" class="btn btn-success mt-3">
+                    Gerenciar Categorias
+                </a>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">📝 Registrar</h5>
-                    <p class="card-text text-muted">Crie uma nova conta para acessar o sistema.</p>
-                    <a href="{% url 'registro' %}" class="btn btn-secondary">Criar Conta</a>
-                </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-journal-text fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Cardápio</h5>
+                <p class="card-text text-muted flex-grow-1">Gerencie os itens disponíveis no cardápio.</p>
+                <a href="{% url 'cardapio:lista-itens' %}" class="btn btn-success mt-3">
+                    Gerenciar Cardápio
+                </a>
             </div>
         </div>
+    </div>
 
-    {% endif %}
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-bar-chart-line fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Painel de Pedidos</h5>
+                <p class="card-text text-muted flex-grow-1">Visualize todos os pedidos com filtros por status e data.</p>
+                <a href="{% url 'cardapio:painel-gerente' %}" class="btn btn-success mt-3">
+                    Ver Painel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-people fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Gerenciar Usuários</h5>
+                <p class="card-text text-muted flex-grow-1">Visualize e altere o perfil dos usuários cadastrados.</p>
+                <a href="{% url 'cardapio:gerenciar-usuarios' %}" class="btn btn-success mt-3">
+                    Gerenciar Usuários
+                </a>
+            </div>
+        </div>
+    </div>
 
 </div>
+
+{% elif user.perfil.tipo == 'atendente' %}
+{# ── Atendente: fila de pedidos ── #}
+<div class="row g-3">
+
+    <div class="col-md-5">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-bell fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Fila de Pedidos</h5>
+                <p class="card-text text-muted flex-grow-1">Veja os pedidos pendentes e atualize o status de cada um.</p>
+                <a href="{% url 'cardapio:fila-pedidos' %}" class="btn btn-success mt-3">
+                    Abrir Fila
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% elif user.perfil.tipo == 'cliente' %}
+{# ── Cliente: cardápio, pedido e histórico ── #}
+<div class="row g-3">
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-grid fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Cardápio</h5>
+                <p class="card-text text-muted flex-grow-1">Consulte os itens disponíveis no cardápio do restaurante.</p>
+                <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success mt-3">
+                    Ver Cardápio
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-cart3 fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Novo Pedido</h5>
+                <p class="card-text text-muted flex-grow-1">Selecione itens do cardápio e faça um novo pedido.</p>
+                <a href="{% url 'cardapio:pedido-carrinho' %}" class="btn btn-success mt-3">
+                    Fazer Pedido
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column p-4">
+                <i class="bi bi-bag-check fs-2 text-success mb-3"></i>
+                <h5 class="card-title fw-semibold">Meus Pedidos</h5>
+                <p class="card-text text-muted flex-grow-1">Acompanhe o status dos seus pedidos em tempo real.</p>
+                <a href="{% url 'cardapio:meus-pedidos' %}" class="btn btn-success mt-3">
+                    Ver Pedidos
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endif %}
+
 {% endblock %}

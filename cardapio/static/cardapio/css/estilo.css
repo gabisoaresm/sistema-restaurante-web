@@ -80,3 +80,11 @@ body {
 .pagamento-detalhe-sumario::marker {
     content: '';
 }
+
+
+/* ── Navbar estática: quebra de linha em telas pequenas ─────────────────── */
+
+/* Garante que os grupos de links da navbar quebrem linha naturalmente */
+.navbar .navbar-nav {
+    flex-wrap: wrap;
+}

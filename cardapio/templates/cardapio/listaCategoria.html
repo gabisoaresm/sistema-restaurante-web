@@ -3,38 +3,62 @@
 {% block titulo %}Categorias{% endblock %}
 
 {% block conteudo %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Categorias</h2>
+
+{# Cabeçalho da página #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-semibold mb-0">
+            <i class="bi bi-tags text-success me-2"></i>Categorias
+        </h4>
+        <p class="text-muted small mb-0">Gerencie as categorias do cardápio</p>
+    </div>
     {% if user.perfil.tipo == 'gerente' %}
-        <a href="{% url 'cardapio:cria-categoria' %}" class="btn btn-success">+ Nova Categoria</a>
+        <a href="{% url 'cardapio:cria-categoria' %}" class="btn btn-success">
+            <i class="bi bi-plus-lg me-1"></i>Nova Categoria
+        </a>
     {% endif %}
 </div>
 
-<table class="table table-striped table-bordered">
-    <thead class="table-dark">
-        <tr>
-            <th>Nome</th>
+{# Lista de categorias #}
+{% if categorias %}
+    <div class="card shadow-sm border-0">
+        <ul class="list-group list-group-flush">
+            {% for categoria in categorias %}
+            <li class="list-group-item d-flex align-items-center gap-3 px-4 py-3">
+                <i class="bi bi-tag text-success fs-5"></i>
+                <span class="fw-semibold flex-grow-1">{{ categoria.nome }}</span>
+                {% if user.perfil.tipo == 'gerente' %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'cardapio:atualiza-categoria' categoria.pk %}"
+                           class="btn btn-sm btn-outline-secondary"
+                           title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'cardapio:apaga-categoria' categoria.pk %}"
+                           class="btn btn-sm btn-outline-danger"
+                           title="Excluir">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+{% else %}
+    {# Estado vazio #}
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-tags fs-1 text-muted"></i>
+            <p class="text-muted mt-3 mb-0">Nenhuma categoria cadastrada ainda.</p>
             {% if user.perfil.tipo == 'gerente' %}
-                <th style="width: 180px;">Ações</th>
+                <a href="{% url 'cardapio:cria-categoria' %}" class="btn btn-success mt-3">
+                    <i class="bi bi-plus-lg me-1"></i>Criar primeira categoria
+                </a>
             {% endif %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for categoria in categorias %}
-        <tr>
-            <td>{{ categoria.nome }}</td>
-            {% if user.perfil.tipo == 'gerente' %}
-            <td>
-                <a href="{% url 'cardapio:atualiza-categoria' categoria.pk %}" class="btn btn-sm btn-warning">Editar</a>
-                <a href="{% url 'cardapio:apaga-categoria' categoria.pk %}" class="btn btn-sm btn-danger">Excluir</a>
-            </td>
-            {% endif %}
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="{% if user.perfil.tipo == 'gerente' %}2{% else %}1{% endif %}" class="text-center text-muted">Nenhuma categoria cadastrada.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </div>
+    </div>
+{% endif %}
+
 {% endblock %}

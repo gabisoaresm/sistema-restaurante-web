@@ -120,7 +120,7 @@ STATIC_URL = "static/"
 
 # Configurações de autenticação
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'cardapio:home'
+LOGIN_REDIRECT_URL = 'cardapio:redirecionar-apos-login'  # redireciona conforme o perfil do usuário
 LOGOUT_REDIRECT_URL = 'login'
 
 # Configuração de e-mail via console

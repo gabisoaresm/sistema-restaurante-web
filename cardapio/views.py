@@ -78,6 +78,31 @@ class ClienteMixin:
 
 
 # ──────────────────────────────────────────────
+# Redirecionamento pós-login
+# ──────────────────────────────────────────────
+
+class RedirecionarAposLoginView(LoginRequiredMixin, View):
+    """
+    View de redirecionamento pós-login.
+    Verifica o perfil do usuário e envia para a página inicial adequada ao seu tipo.
+    Atendente vai direto para a Fila de Pedidos; demais perfis vão para a Home.
+    """
+
+    def get(self, request):
+        try:
+            tipo = request.user.perfil.tipo
+        except AttributeError:
+            # Usuário sem perfil cadastrado — fallback seguro para a Home
+            return redirect(reverse_lazy('cardapio:home'))
+
+        if tipo == 'atendente':
+            return redirect(reverse_lazy('cardapio:fila-pedidos'))
+
+        # gerente e cliente vão para a Home
+        return redirect(reverse_lazy('cardapio:home'))
+
+
+# ──────────────────────────────────────────────
 # CRUD de Categoria
 # ──────────────────────────────────────────────
 
