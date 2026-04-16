@@ -4,6 +4,13 @@
 
 {% block conteudo %}
 
+{# Saudação #}
+<div class="mb-4">
+    <h4 class="fw-semibold">
+        Olá, {% firstof user.first_name user.username %} 👋
+    </h4>
+</div>
+
 {# Cabeçalho #}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -53,14 +60,8 @@
             {% elif pedido.status == 'entregue' %}
                 <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal">{{ pedido.get_status_display }}</span>
             {% endif %}
-            {# Status de pagamento — vivid #}
-            {% if pedido.status_pagamento == 'pago' %}
-                <span class="badge text-bg-success">{{ pedido.get_status_pagamento_display }}</span>
-            {% elif pedido.status_pagamento == 'pendente' %}
-                <span class="badge text-bg-warning">{{ pedido.get_status_pagamento_display }}</span>
-            {% elif pedido.status_pagamento == 'cancelado' %}
-                <span class="badge text-bg-danger">{{ pedido.get_status_pagamento_display }}</span>
-            {% endif %}
+            {# Status de pagamento #}
+            <span class="badge text-bg-success">{{ pedido.get_status_pagamento_display }}</span>
         </div>
     </div>
 

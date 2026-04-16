@@ -162,9 +162,7 @@ class Pedido(models.Model):
         ('cartao_debito',  'Cartão de Débito'),
     ]
     STATUS_PAGAMENTO_CHOICES = [
-        ('pendente',  'Pendente'),
-        ('pago',      'Pago'),
-        ('cancelado', 'Cancelado'),
+        ('pago', 'Pago'),
     ]
 
     forma_pagamento = models.CharField(
@@ -176,7 +174,7 @@ class Pedido(models.Model):
     status_pagamento = models.CharField(
         max_length=20,
         choices=STATUS_PAGAMENTO_CHOICES,
-        default='pendente',
+        default='pago',
         help_text='Estado atual do pagamento',
     )
     cartao_utilizado = models.ForeignKey(

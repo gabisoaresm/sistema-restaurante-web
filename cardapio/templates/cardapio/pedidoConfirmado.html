@@ -34,13 +34,7 @@
 
             <dt class="col-5 col-md-4 text-muted fw-normal">Status do pagamento</dt>
             <dd class="col-7 col-md-8 mb-0">
-                {% if pedido.status_pagamento == 'pago' %}
-                    <span class="badge text-bg-success">{{ pedido.get_status_pagamento_display }}</span>
-                {% elif pedido.status_pagamento == 'pendente' %}
-                    <span class="badge text-bg-warning">{{ pedido.get_status_pagamento_display }}</span>
-                {% else %}
-                    <span class="badge text-bg-danger">{{ pedido.get_status_pagamento_display }}</span>
-                {% endif %}
+                <span class="badge text-bg-success">{{ pedido.get_status_pagamento_display }}</span>
             </dd>
         </dl>
     </div>

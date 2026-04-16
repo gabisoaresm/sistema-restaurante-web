@@ -40,6 +40,10 @@ class HomeView(View):
     """
 
     def get(self, request):
+        # Atendente não tem home — vai direto para a Fila de Pedidos
+        if request.user.is_authenticated and hasattr(request.user, 'perfil') \
+                and request.user.perfil.tipo == 'atendente':
+            return redirect(reverse_lazy('cardapio:fila-pedidos'))
         return render(request, 'cardapio/home.html')
 
 
@@ -418,8 +422,14 @@ class GerenciarUsuariosView(LoginRequiredMixin, GerenteMixin, View):
     """
 
     def get(self, request):
+        # Exclui superusuários e usuários sem Perfil (ex.: admin criado via createsuperuser)
         # select_related('perfil') evita N+1 queries ao acessar usuario.perfil no template
-        usuarios = User.objects.select_related('perfil').order_by('username')
+        usuarios = (
+            User.objects
+            .filter(perfil__isnull=False, is_superuser=False)
+            .select_related('perfil')
+            .order_by('username')
+        )
         return render(request, 'cardapio/gerenciarUsuarios.html', {'usuarios': usuarios})
 
 
@@ -433,6 +443,9 @@ class AlterarPerfilUsuarioView(LoginRequiredMixin, GerenteMixin, View):
     def get(self, request, pk):
         # Busca o usuário alvo ou retorna 404
         usuario = get_object_or_404(User, pk=pk)
+        # Proteção: usuário sem Perfil não pode ser editado por esta view
+        if not hasattr(usuario, 'perfil'):
+            return redirect('cardapio:gerenciar-usuarios')
         # Pré-seleciona o tipo atual no formulário
         formulario = AlterarPerfilForm(initial={'tipo': usuario.perfil.tipo})
         return render(request, 'cardapio/alterarPerfilUsuario.html', {
@@ -442,6 +455,9 @@ class AlterarPerfilUsuarioView(LoginRequiredMixin, GerenteMixin, View):
 
     def post(self, request, pk):
         usuario = get_object_or_404(User, pk=pk)
+        # Proteção: usuário sem Perfil não pode ser editado por esta view
+        if not hasattr(usuario, 'perfil'):
+            return redirect('cardapio:gerenciar-usuarios')
         formulario = AlterarPerfilForm(request.POST)
         if formulario.is_valid():
             # Atualiza o tipo do Perfil vinculado ao usuário selecionado
@@ -888,7 +904,7 @@ class AtualizarStatusPedidoView(LoginRequiredMixin, AtendenteMixin, View):
 class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
     """
     Exibe todos os pedidos em tabela para o gerente (GET).
-    Aceita filtros combinados: ?status=VALOR, ?data=AAAA-MM-DD e ?status_pag=VALOR.
+    Aceita filtros combinados: ?status=VALOR e ?data=AAAA-MM-DD.
     Calcula o total de cada pedido na view (templates não fazem multiplicação).
     Acesso: gerente. Template: painelGerente.html.
     """
@@ -906,11 +922,6 @@ class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
         if data_filtro:
             pedidos_qs = pedidos_qs.filter(data_hora__date=data_filtro)
 
-        # Filtro por status de pagamento via query string (?status_pag=VALOR)
-        status_pag_filtro = request.GET.get('status_pag')
-        if status_pag_filtro:
-            pedidos_qs = pedidos_qs.filter(status_pagamento=status_pag_filtro)
-
         # Calcula o total de cada pedido na view (templates não fazem multiplicação)
         pedidos = []
         for pedido in pedidos_qs:
@@ -918,12 +929,10 @@ class PainelGerenteView(LoginRequiredMixin, GerenteMixin, View):
             pedidos.append({'pedido': pedido, 'total': total})
 
         return render(request, 'cardapio/painelGerente.html', {
-            'pedidos':              pedidos,
-            'status_choices':       Pedido.STATUS_CHOICES,
-            'status_filtro':        status_filtro,
-            'data_filtro':          data_filtro or '',
-            'status_pag_filtro':    status_pag_filtro,
-            'status_pag_choices':   Pedido.STATUS_PAGAMENTO_CHOICES,
+            'pedidos':        pedidos,
+            'status_choices': Pedido.STATUS_CHOICES,
+            'status_filtro':  status_filtro,
+            'data_filtro':    data_filtro or '',
         })
 
 

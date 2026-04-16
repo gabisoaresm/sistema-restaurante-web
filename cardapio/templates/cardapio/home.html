@@ -96,25 +96,6 @@
 
 </div>
 
-{% elif user.perfil.tipo == 'atendente' %}
-{# ── Atendente: fila de pedidos ── #}
-<div class="row g-3">
-
-    <div class="col-md-5">
-        <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column p-4">
-                <i class="bi bi-bell fs-2 text-success mb-3"></i>
-                <h5 class="card-title fw-semibold">Fila de Pedidos</h5>
-                <p class="card-text text-muted flex-grow-1">Veja os pedidos pendentes e atualize o status de cada um.</p>
-                <a href="{% url 'cardapio:fila-pedidos' %}" class="btn btn-success mt-3">
-                    Abrir Fila
-                </a>
-            </div>
-        </div>
-    </div>
-
-</div>
-
 {% elif user.perfil.tipo == 'cliente' %}
 {# ── Cliente: cardápio, pedido e histórico ── #}
 <div class="row g-3">

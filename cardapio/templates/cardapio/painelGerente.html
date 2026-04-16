@@ -20,30 +20,13 @@
         <div>
             <p class="text-muted small fw-semibold mb-2 text-uppercase" style="font-size: .7rem; letter-spacing: .05em;">Status do pedido</p>
             <div class="d-flex flex-wrap gap-1">
-                <a href="{% url 'cardapio:painel-gerente' %}{% if data_filtro %}?data={{ data_filtro }}{% endif %}{% if status_pag_filtro %}&status_pag={{ status_pag_filtro }}{% endif %}"
+                <a href="{% url 'cardapio:painel-gerente' %}{% if data_filtro %}?data={{ data_filtro }}{% endif %}"
                    class="btn btn-sm {% if not status_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">
                     Todos
                 </a>
                 {% for valor, rotulo in status_choices %}
-                <a href="{% url 'cardapio:painel-gerente' %}?status={{ valor }}{% if data_filtro %}&data={{ data_filtro }}{% endif %}{% if status_pag_filtro %}&status_pag={{ status_pag_filtro }}{% endif %}"
+                <a href="{% url 'cardapio:painel-gerente' %}?status={{ valor }}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
                    class="btn btn-sm {% if status_filtro == valor %}btn-dark{% else %}btn-outline-dark{% endif %}">
-                    {{ rotulo }}
-                </a>
-                {% endfor %}
-            </div>
-        </div>
-
-        {# Filtro: status de pagamento #}
-        <div>
-            <p class="text-muted small fw-semibold mb-2 text-uppercase" style="font-size: .7rem; letter-spacing: .05em;">Pagamento</p>
-            <div class="d-flex flex-wrap gap-1">
-                <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
-                   class="btn btn-sm {% if not status_pag_filtro %}btn-dark{% else %}btn-outline-dark{% endif %}">
-                    Todos
-                </a>
-                {% for valor, rotulo in status_pag_choices %}
-                <a href="{% url 'cardapio:painel-gerente' %}?status_pag={{ valor }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if data_filtro %}&data={{ data_filtro }}{% endif %}"
-                   class="btn btn-sm {% if status_pag_filtro == valor %}btn-dark{% else %}btn-outline-dark{% endif %}">
                     {{ rotulo }}
                 </a>
                 {% endfor %}
@@ -57,14 +40,11 @@
                 {% if status_filtro %}
                     <input type="hidden" name="status" value="{{ status_filtro }}">
                 {% endif %}
-                {% if status_pag_filtro %}
-                    <input type="hidden" name="status_pag" value="{{ status_pag_filtro }}">
-                {% endif %}
                 <input type="date" name="data" value="{{ data_filtro }}"
                        class="form-control form-control-sm" style="width: auto;">
                 <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
                 {% if data_filtro %}
-                <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}{% if status_pag_filtro %}&status_pag={{ status_pag_filtro }}{% endif %}"
+                <a href="{% url 'cardapio:painel-gerente' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}"
                    class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-x-lg"></i>
                 </a>
@@ -117,13 +97,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if p.pedido.status_pagamento == 'pago' %}
-                            <span class="badge text-bg-success">{{ p.pedido.get_status_pagamento_display }}</span>
-                        {% elif p.pedido.status_pagamento == 'pendente' %}
-                            <span class="badge text-bg-warning">{{ p.pedido.get_status_pagamento_display }}</span>
-                        {% elif p.pedido.status_pagamento == 'cancelado' %}
-                            <span class="badge text-bg-danger">{{ p.pedido.get_status_pagamento_display }}</span>
-                        {% endif %}
+                        <span class="badge text-bg-success">{{ p.pedido.get_status_pagamento_display }}</span>
                     </td>
                     <td class="text-center">{{ p.pedido.itens.count }}</td>
                     <td class="text-end fw-semibold">R$ {{ p.total }}</td>

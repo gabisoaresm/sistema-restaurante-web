@@ -33,12 +33,16 @@
                     <td>{% firstof usuario.get_full_name "—" %}</td>
                     <td class="text-muted small">{% firstof usuario.email "—" %}</td>
                     <td>
-                        {% if usuario.perfil.tipo == 'gerente' %}
-                            <span class="badge bg-primary-subtle text-primary-emphasis fw-normal">{{ usuario.perfil.get_tipo_display }}</span>
-                        {% elif usuario.perfil.tipo == 'atendente' %}
-                            <span class="badge bg-warning-subtle text-warning-emphasis fw-normal">{{ usuario.perfil.get_tipo_display }}</span>
-                        {% elif usuario.perfil.tipo == 'cliente' %}
-                            <span class="badge bg-success-subtle text-success-emphasis fw-normal">{{ usuario.perfil.get_tipo_display }}</span>
+                        {% if usuario.perfil %}
+                            {% if usuario.perfil.tipo == 'gerente' %}
+                                <span class="badge bg-primary-subtle text-primary-emphasis fw-normal">{{ usuario.perfil.get_tipo_display }}</span>
+                            {% elif usuario.perfil.tipo == 'atendente' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis fw-normal">{{ usuario.perfil.get_tipo_display }}</span>
+                            {% elif usuario.perfil.tipo == 'cliente' %}
+                                <span class="badge bg-success-subtle text-success-emphasis fw-normal">{{ usuario.perfil.get_tipo_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal">—</span>
+                            {% endif %}
                         {% else %}
                             <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal">—</span>
                         {% endif %}

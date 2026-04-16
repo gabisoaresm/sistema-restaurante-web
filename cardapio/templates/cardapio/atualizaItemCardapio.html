@@ -1,4 +1,5 @@
 {% extends 'cardapio/base.html' %}
+{% load l10n %}
 
 {% block titulo %}Editar Item{% endblock %}
 
@@ -53,7 +54,7 @@
                             <input type="number"
                                    name="{{ formulario.preco.html_name }}"
                                    id="{{ formulario.preco.id_for_label }}"
-                                   value="{{ formulario.preco.value|default:'' }}"
+                                   value="{{ formulario.preco.value|unlocalize }}"
                                    step="0.01"
                                    min="0"
                                    class="form-control{% if formulario.preco.errors %} is-invalid{% endif %}"
