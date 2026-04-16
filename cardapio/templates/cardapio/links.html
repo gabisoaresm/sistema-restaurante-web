@@ -1,18 +1,22 @@
 {# Barra de navegação principal do site — estática, sem JavaScript #}
 {# Os links exibidos variam conforme o tipo de perfil do usuário logado #}
-<nav class="navbar navbar-dark bg-dark py-2">
-    <div class="container d-flex flex-wrap align-items-center gap-3">
+<nav class="navbar bg-white border-bottom py-0">
+    <div class="container d-flex flex-wrap align-items-stretch gap-0">
 
         {# Brand: nome do restaurante com link para a home #}
-        <a class="navbar-brand me-3" href="{% url 'cardapio:home' %}">🍽 Restaurante</a>
+        <a class="navbar-brand fw-bold text-dark py-3 me-4"
+           href="{% url 'cardapio:home' %}">
+            <i class="bi bi-shop text-success me-2"></i>Restaurante
+        </a>
 
         {# Grupo esquerdo: links de navegação principais #}
-        <ul class="navbar-nav flex-row flex-wrap gap-1 me-auto">
+        <ul class="navbar-nav flex-row flex-wrap align-items-stretch me-auto">
 
             {# Home — visível para todos, exceto atendente (que cai direto na Fila de Pedidos) #}
             {% if not user.is_authenticated or user.perfil.tipo != 'atendente' %}
-            <li class="nav-item">
-                <a class="nav-link px-3 {% if request.resolver_match.url_name == 'home' %}active fw-semibold{% endif %}"
+            <li class="nav-item d-flex align-items-center">
+                <a class="nav-link px-3
+                          {% if request.resolver_match.url_name == 'home' %}text-success fw-semibold{% else %}text-body{% endif %}"
                    href="{% url 'cardapio:home' %}">Home</a>
             </li>
             {% endif %}
@@ -20,46 +24,55 @@
             {% if user.is_authenticated %}
                 {% if user.perfil.tipo == 'gerente' %}
                     {# Gerente: acesso ao CRUD, painel de pedidos e gestão de usuários #}
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if 'categoria' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if 'categoria' in request.resolver_match.url_name %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:lista-categorias' %}">Categorias</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if 'item' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if 'item' in request.resolver_match.url_name or 'itens' in request.resolver_match.url_name %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:lista-itens' %}">Cardápio</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if 'painel' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if 'painel' in request.resolver_match.url_name %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:painel-gerente' %}">Painel de Pedidos</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if 'usuario' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                           href="{% url 'cardapio:gerenciar-usuarios' %}">Gerenciar Usuários</a>
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if 'usuario' in request.resolver_match.url_name %}text-success fw-semibold{% else %}text-body{% endif %}"
+                           href="{% url 'cardapio:gerenciar-usuarios' %}">Usuários</a>
                     </li>
 
                 {% elif user.perfil.tipo == 'atendente' %}
                     {# Atendente: fila de pedidos para atualizar status #}
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if 'fila' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if 'fila' in request.resolver_match.url_name %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:fila-pedidos' %}">Fila de Pedidos</a>
                     </li>
 
                 {% elif user.perfil.tipo == 'cliente' %}
                     {# Cliente: cardápio, pedido atual, histórico de pedidos e cartões #}
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if request.resolver_match.url_name == 'cardapio-cliente' %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if request.resolver_match.url_name == 'cardapio-cliente' %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:cardapio-cliente' %}">Cardápio</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if request.resolver_match.url_name == 'pedido-carrinho' %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if request.resolver_match.url_name == 'pedido-carrinho' %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:pedido-carrinho' %}">Pedido</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if request.resolver_match.url_name == 'meus-pedidos' %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if request.resolver_match.url_name == 'meus-pedidos' %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:meus-pedidos' %}">Meus Pedidos</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 {% if 'cartao' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link px-3
+                                  {% if 'carto' in request.resolver_match.url_name %}text-success fw-semibold{% else %}text-body{% endif %}"
                            href="{% url 'cardapio:meus-cartoes' %}">Meus Cartões</a>
                     </li>
                 {% endif %}
@@ -67,30 +80,39 @@
 
         </ul>
 
-        {# Grupo direito: nome do usuário (link para perfil) + Sair, ou Login + Registrar #}
-        <ul class="navbar-nav flex-row flex-wrap gap-2 ms-auto">
+        {# Grupo direito: perfil + Sair, ou Login + Registrar #}
+        <ul class="navbar-nav flex-row flex-wrap align-items-center gap-2 py-2">
             {% if user.is_authenticated %}
-                {# Nome do usuário — botão contornado claro, redireciona para Meu Perfil #}
+                {# Nome do usuário — link para Meu Perfil #}
                 <li class="nav-item">
-                    <a class="btn btn-outline-light btn-sm px-3"
+                    <a class="btn btn-sm btn-outline-secondary
+                              {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
                        href="{% url 'cardapio:perfil' %}">
-                        {% firstof user.first_name user.username "visitante" %}
+                        <i class="bi bi-person-circle me-1"></i>{% firstof user.first_name user.username "visitante" %}
                     </a>
                 </li>
-                {# Link de logout com confirmação — botão contornado vermelho #}
+                {# Logout #}
                 <li class="nav-item">
-                    <a class="btn btn-outline-danger btn-sm px-3"
-                       href="{% url 'logout-confirma' %}">Sair</a>
+                    <a class="btn btn-sm btn-outline-danger"
+                       href="{% url 'logout-confirma' %}">
+                        <i class="bi bi-box-arrow-right me-1"></i>Sair
+                    </a>
                 </li>
             {% else %}
-                {# Usuário não autenticado: opções de acesso #}
+                {# Usuário não autenticado #}
                 <li class="nav-item">
-                    <a class="nav-link px-3 {% if request.resolver_match.url_name == 'login' %}active fw-semibold{% endif %}"
-                       href="{% url 'login' %}">Login</a>
+                    <a class="btn btn-sm btn-outline-success
+                              {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+                       href="{% url 'login' %}">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link px-3 {% if request.resolver_match.url_name == 'registro' %}active fw-semibold{% endif %}"
-                       href="{% url 'registro' %}">Registrar</a>
+                    <a class="btn btn-sm btn-success
+                              {% if request.resolver_match.url_name == 'registro' %}active{% endif %}"
+                       href="{% url 'registro' %}">
+                        <i class="bi bi-person-plus me-1"></i>Registrar
+                    </a>
                 </li>
             {% endif %}
         </ul>

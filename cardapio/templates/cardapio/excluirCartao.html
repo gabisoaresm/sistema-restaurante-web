@@ -3,27 +3,54 @@
 {% block titulo %}Excluir Cartão{% endblock %}
 
 {% block conteudo %}
-<h2 class="mb-4">Excluir Cartão</h2>
+<div class="row justify-content-center">
+    <div class="col-sm-10 col-md-7 col-lg-5">
 
-<div class="card mb-4" style="max-width: 400px;">
-    <div class="card-body">
-        <h5 class="card-title">{{ cartao.apelido }}</h5>
-        <p class="card-text text-muted">{{ cartao.numero_mascarado }}</p>
-        <p class="card-text small">
-            <strong>Bandeira:</strong> {{ cartao.get_bandeira_display }}<br>
-            <strong>Tipo:</strong> {{ cartao.get_tipo_display }}<br>
-            <strong>Validade:</strong> {{ cartao.validade }}
-        </p>
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5 text-center">
+
+                <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                <h5 class="mt-3 fw-semibold">Excluir cartão?</h5>
+
+                {# Detalhes do cartão a ser excluído #}
+                <div class="card border-0 bg-light rounded-3 mt-3 mb-4 text-start">
+                    <div class="card-body px-4 py-3 small">
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-muted fw-normal">Apelido</dt>
+                            <dd class="col-7 fw-semibold mb-1">{{ cartao.apelido }}</dd>
+
+                            <dt class="col-5 text-muted fw-normal">Número</dt>
+                            <dd class="col-7 mb-1">{{ cartao.numero_mascarado }}</dd>
+
+                            <dt class="col-5 text-muted fw-normal">Bandeira</dt>
+                            <dd class="col-7 mb-1">{{ cartao.get_bandeira_display }}</dd>
+
+                            <dt class="col-5 text-muted fw-normal">Tipo</dt>
+                            <dd class="col-7 mb-1">{{ cartao.get_tipo_display }}</dd>
+
+                            <dt class="col-5 text-muted fw-normal">Validade</dt>
+                            <dd class="col-7 mb-0">{{ cartao.validade }}</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-4">Esta ação não pode ser desfeita.</p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Confirmar Exclusão
+                        </button>
+                        <a href="{% url 'cardapio:meus-cartoes' %}" class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
     </div>
 </div>
-
-<p class="text-danger fw-semibold">Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.</p>
-
-<form method="post" class="d-flex gap-2">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">
-        <i class="bi bi-trash me-1"></i>Confirmar Exclusão
-    </button>
-    <a href="{% url 'cardapio:meus-cartoes' %}" class="btn btn-secondary">Cancelar</a>
-</form>
 {% endblock %}

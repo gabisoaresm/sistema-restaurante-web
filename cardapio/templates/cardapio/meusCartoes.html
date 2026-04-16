@@ -3,39 +3,81 @@
 {% block titulo %}Meus Cartões{% endblock %}
 
 {% block conteudo %}
+
+{# Cabeçalho #}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Meus Cartões</h2>
-    <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Adicionar Novo Cartão
+    <div>
+        <h4 class="fw-semibold mb-0">
+            <i class="bi bi-credit-card text-success me-2"></i>Meus Cartões
+        </h4>
+        <p class="text-muted small mb-0">Cartões salvos para pagamento</p>
+    </div>
+    {% if cartoes %}
+    <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg me-1"></i>Adicionar Cartão
     </a>
+    {% endif %}
 </div>
 
 <div class="row g-3">
     {% for cartao in cartoes %}
     <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title mb-1">{{ cartao.apelido }}</h5>
-                <p class="text-muted small mb-2">{{ cartao.numero_mascarado }}</p>
-                <p class="mb-1">
-                    <span class="badge bg-secondary">{{ cartao.get_bandeira_display }}</span>
-                    <span class="badge bg-outline-secondary border ms-1 text-dark">{{ cartao.get_tipo_display }}</span>
-                </p>
-                <p class="mb-1 small"><strong>Titular:</strong> {{ cartao.nome_titular }}</p>
-                <p class="mb-0 small"><strong>Validade:</strong> {{ cartao.validade }}</p>
-            </div>
-            <div class="card-footer text-end">
-                <a href="{% url 'cardapio:excluir-cartao' cartao.pk %}"
-                   class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-trash me-1"></i>Excluir
-                </a>
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4 d-flex flex-column">
+
+                {# Apelido e número mascarado #}
+                <h6 class="fw-semibold mb-1">{{ cartao.apelido }}</h6>
+                <p class="text-muted small mb-3">{{ cartao.numero_mascarado }}</p>
+
+                {# Bandeira e tipo #}
+                <div class="mb-3 d-flex gap-2 flex-wrap">
+                    {% if cartao.bandeira == 'visa' %}
+                        <span class="badge bg-primary-subtle text-primary-emphasis fw-normal">{{ cartao.get_bandeira_display }}</span>
+                    {% elif cartao.bandeira == 'mastercard' %}
+                        <span class="badge bg-danger-subtle text-danger-emphasis fw-normal">{{ cartao.get_bandeira_display }}</span>
+                    {% elif cartao.bandeira == 'elo' %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis fw-normal">{{ cartao.get_bandeira_display }}</span>
+                    {% elif cartao.bandeira == 'amex' %}
+                        <span class="badge bg-success-subtle text-success-emphasis fw-normal">{{ cartao.get_bandeira_display }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal">{{ cartao.get_bandeira_display }}</span>
+                    {% endif %}
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal">{{ cartao.get_tipo_display }}</span>
+                </div>
+
+                {# Titular e validade #}
+                <dl class="row mb-0 small flex-grow-1">
+                    <dt class="col-5 text-muted fw-normal">Titular</dt>
+                    <dd class="col-7 mb-1">{{ cartao.nome_titular }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Validade</dt>
+                    <dd class="col-7 mb-0">{{ cartao.validade }}</dd>
+                </dl>
+
+                {# Ação #}
+                <div class="mt-3 pt-3 border-top">
+                    <a href="{% url 'cardapio:excluir-cartao' cartao.pk %}"
+                       class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash me-1"></i>Excluir
+                    </a>
+                </div>
+
             </div>
         </div>
     </div>
     {% empty %}
     <div class="col-12">
-        <p class="text-muted">Você ainda não tem cartões salvos.</p>
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-credit-card fs-2 text-muted d-block mb-3"></i>
+                <p class="fw-semibold mb-1">Você ainda não tem cartões salvos.</p>
+                <p class="text-muted small mb-3">Adicione um cartão para agilizar seus pagamentos.</p>
+                <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-success">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar Cartão
+                </a>
+            </div>
+        </div>
     </div>
     {% endfor %}
 </div>
+
 {% endblock %}

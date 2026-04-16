@@ -3,139 +3,153 @@
 {% block titulo %}Meu Pedido{% endblock %}
 
 {% block conteudo %}
-<h2 class="mb-4">Meu Pedido</h2>
+
+{# Cabeçalho #}
+<div class="mb-4">
+    <h4 class="fw-semibold mb-0">
+        <i class="bi bi-cart3 text-success me-2"></i>Meu Pedido
+    </h4>
+    <p class="text-muted small mb-0">Revise os itens e confirme o pagamento</p>
+</div>
 
 {% if carrinho_vazio %}
-{# Estado vazio: o cliente ainda não selecionou nenhum item #}
-<div class="card text-center py-5">
-    <div class="card-body">
-        <i class="bi bi-cart-x fs-1 text-muted mb-3 d-block"></i>
-        <h5 class="card-title text-muted">Seu pedido está vazio.</h5>
-        <p class="card-text text-muted">Crie seu Pedido na página do Cardápio.</p>
-        <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success mt-2">
-            Ver Cardápio
+
+{# Estado vazio #}
+<div class="card shadow-sm border-0">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-cart-x fs-2 text-muted d-block mb-3"></i>
+        <p class="fw-semibold mb-1">Seu pedido está vazio.</p>
+        <p class="text-muted small mb-3">Adicione itens pelo cardápio para continuar.</p>
+        <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success">
+            <i class="bi bi-grid me-1"></i>Ver Cardápio
         </a>
     </div>
 </div>
 
 {% else %}
-{# Carrinho com itens: layout em duas colunas (lista de itens + resumo/pagamento) #}
 
-{# Formulário único que engloba observações e pagamento #}
+{# Formulário único: observações + pagamento #}
 <form method="POST" action="{% url 'cardapio:pedido-carrinho' %}">
     {% csrf_token %}
 
-    <div class="row g-4">
+    <div class="row g-4 align-items-start">
 
-        {# ── Coluna esquerda: itens do pedido e observações ── #}
+        {# ── Coluna esquerda: itens + observações ── #}
         <div class="col-md-8">
 
-            <h5 class="mb-3">Itens do Pedido</h5>
-
-            {# Tabela com os itens selecionados no cardápio #}
-            <table class="table table-bordered table-sm mb-4">
-                <thead class="table-light">
-                    <tr>
-                        <th>Item</th>
-                        <th class="text-center" style="width: 70px;">Qtd</th>
-                        <th class="text-end" style="width: 110px;">Preço unit.</th>
-                        <th class="text-end" style="width: 110px;">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for entrada in itens_pedido %}
-                    <tr>
-                        <td>{{ entrada.item.nome }}</td>
-                        <td class="text-center">{{ entrada.quantidade }}</td>
-                        <td class="text-end">R$ {{ entrada.item.preco|floatformat:2 }}</td>
-                        <td class="text-end">R$ {{ entrada.subtotal|floatformat:2 }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            {# Campo de observações — opcional #}
-            <div class="mb-3">
-                <label for="observacoes" class="form-label">Observações (opcional)</label>
-                <textarea name="observacoes" id="observacoes"
-                          class="form-control" rows="3"
-                          placeholder="Ex.: sem cebola, ponto da carne, etc."></textarea>
+            {# Tabela de itens #}
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light border-bottom">
+                            <tr>
+                                <th class="ps-4">Item</th>
+                                <th class="text-center" style="width: 70px;">Qtd</th>
+                                <th class="text-end" style="width: 120px;">Preço unit.</th>
+                                <th class="text-end pe-4" style="width: 120px;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entrada in itens_pedido %}
+                            <tr>
+                                <td class="ps-4 fw-semibold">{{ entrada.item.nome }}</td>
+                                <td class="text-center">{{ entrada.quantidade }}</td>
+                                <td class="text-end text-muted small">R$ {{ entrada.item.preco|floatformat:2 }}</td>
+                                <td class="text-end fw-semibold pe-4">R$ {{ entrada.subtotal|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {# Link para voltar ao cardápio e ajustar os itens #}
-            <a href="{% url 'cardapio:cardapio-cliente' %}" class="text-muted small">
-                ← Voltar ao Cardápio
-            </a>
+            {# Observações #}
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <label for="observacoes" class="form-label fw-semibold small">
+                        Observações <span class="text-muted fw-normal">(opcional)</span>
+                    </label>
+                    <textarea name="observacoes" id="observacoes"
+                              class="form-control" rows="3"
+                              placeholder="Ex.: sem cebola, ponto da carne, etc."></textarea>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a href="{% url 'cardapio:cardapio-cliente' %}" class="text-muted small">
+                    ← Voltar ao Cardápio
+                </a>
+            </div>
 
         </div>{# fim col-md-8 #}
 
-        {# ── Coluna direita: resumo e pagamento ── #}
+        {# ── Coluna direita: resumo + pagamento ── #}
         <div class="col-md-4">
 
-            {# Card de resumo com o total #}
-            <div class="card mb-3">
-                <div class="card-header fw-bold">Resumo do Pedido</div>
-                <div class="card-body">
-                    <p class="mb-0 fs-5 fw-bold text-success">
+            {# Resumo #}
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-body p-4">
+                    <p class="text-muted small fw-semibold text-uppercase mb-2"
+                       style="font-size: .7rem; letter-spacing: .05em;">Resumo</p>
+                    <p class="fs-5 fw-semibold text-success mb-0">
                         Total: R$ {{ total|floatformat:2 }}
                     </p>
                 </div>
             </div>
 
-            {# Card de pagamento com cartão salvo #}
-            <div class="card">
-                <div class="card-header fw-bold">Pagamento</div>
-                <div class="card-body">
+            {# Pagamento #}
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <p class="text-muted small fw-semibold text-uppercase mb-3"
+                       style="font-size: .7rem; letter-spacing: .05em;">Pagamento</p>
 
                     {% if not cartoes %}
-                        {# Sem cartões cadastrados: orienta o cliente a cadastrar #}
-                        <p class="text-muted small">Você não possui cartões cadastrados.</p>
-                        <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-outline-primary btn-sm">
-                            Cadastrar Cartão
+                        <p class="text-muted small mb-3">Você não possui cartões cadastrados.</p>
+                        <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-outline-secondary w-100 btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>Cadastrar Cartão
                         </a>
                     {% else %}
-                        {# Exibe alerta de CVV incorreto, se houver #}
+
                         {% if erro_cvv %}
                             <div class="alert alert-danger py-2 small">{{ erro_cvv }}</div>
                         {% endif %}
 
-                        {# Select do cartão — exibe apelido + número mascarado #}
                         <div class="mb-3">
-                            <label for="id_cartao" class="form-label small fw-semibold">Cartão</label>
+                            <label for="id_cartao" class="form-label small">Cartão</label>
                             {{ form_cartao.cartao }}
                             {% if form_cartao.cartao.errors %}
                                 <div class="text-danger small mt-1">{{ form_cartao.cartao.errors.0 }}</div>
                             {% endif %}
                         </div>
 
-                        {# Campo CVV #}
                         <div class="mb-3">
-                            <label for="id_cvv" class="form-label small fw-semibold">CVV</label>
+                            <label for="id_cvv" class="form-label small">CVV</label>
                             {{ form_cartao.cvv }}
                             {% if form_cartao.cvv.errors %}
                                 <div class="text-danger small mt-1">{{ form_cartao.cvv.errors.0 }}</div>
                             {% endif %}
                         </div>
 
-                        {# Botão de confirmação — mesmo tamanho que o link abaixo #}
                         <button type="submit" class="btn btn-success w-100">
-                            Confirmar Pedido
+                            <i class="bi bi-check-lg me-1"></i>Confirmar Pedido
                         </button>
 
-                        {# Link secundário para cadastrar um novo cartão, sempre visível quando já há cartões #}
                         <div class="mt-2">
-                            <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-outline-secondary w-100">
-                                Cadastrar novo cartão
+                            <a href="{% url 'cardapio:adicionar-cartao' %}" class="btn btn-outline-secondary w-100 btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>Cadastrar novo cartão
                             </a>
                         </div>
+
                     {% endif %}
 
-                </div>{# fim card-body #}
-            </div>{# fim card pagamento #}
+                </div>
+            </div>
 
         </div>{# fim col-md-4 #}
+
     </div>{# fim row #}
 </form>
+
 {% endif %}
 
 {% endblock %}

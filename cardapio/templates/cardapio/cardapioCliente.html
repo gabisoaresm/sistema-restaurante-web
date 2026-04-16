@@ -15,53 +15,74 @@ e redireciona para a página do pedido — sem nenhum recarregamento intermediá
     {# Margem inferior extra para o conteúdo não ficar escondido atrás do rodapé fixo #}
     <div class="pb-5 mb-4">
 
-        <h2 class="mb-4">Cardápio</h2>
+        {# Cabeçalho #}
+        <div class="mb-4">
+            <h4 class="fw-semibold mb-0">
+                <i class="bi bi-grid text-success me-2"></i>Cardápio
+            </h4>
+            <p class="text-muted small mb-0">Selecione os itens e a quantidade desejada</p>
+        </div>
 
         {% if not categorias_ctx %}
-            {# Mensagem exibida quando não há itens disponíveis no cardápio #}
-            <p class="text-muted">Nenhum item disponível no momento.</p>
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
+                    Nenhum item disponível no momento.
+                </div>
+            </div>
         {% endif %}
 
         {% for sec in categorias_ctx %}
-            {# Título da categoria — exibe apenas o nome, sem a palavra "categoria" #}
-            <h4 class="mt-4 mb-3 border-bottom pb-2">{{ sec.categoria.nome }}</h4>
+
+            {# Título da categoria #}
+            <h6 class="fw-semibold text-uppercase text-muted mb-3 mt-4"
+                style="font-size: .7rem; letter-spacing: .07em;">
+                <i class="bi bi-tag me-1"></i>{{ sec.categoria.nome }}
+            </h6>
 
             <div class="row g-3">
                 {% for entry in sec.itens %}
                     <div class="col-md-4 col-sm-6">
-                        {# Card com borda azul quando o item está no carrinho (quantidade > 0) #}
-                        <div class="card h-100 {% if entry.quantidade > 0 %}border-primary{% endif %}">
-                            <div class="card-body d-flex flex-column">
+                        <div class="card h-100 shadow-sm border-0
+                            {% if entry.quantidade > 0 %}border border-success border-2{% endif %}">
+                            <div class="card-body d-flex flex-column p-4">
 
-                                {# Nome e preço do item em destaque #}
-                                <h5 class="card-title fs-5">{{ entry.item.nome }}</h5>
-                                <p class="card-text text-muted flex-grow-1">{{ entry.item.descricao }}</p>
-                                <p class="fw-bold mb-3">R$ {{ entry.item.preco|floatformat:2 }}</p>
+                                {# Nome e descrição #}
+                                <h6 class="card-title fw-semibold mb-1">{{ entry.item.nome }}</h6>
+                                <p class="card-text text-muted small flex-grow-1 mb-3">{{ entry.item.descricao }}</p>
 
-                                {# Campo de quantidade: name="item_<id>" identifica o item no POST #}
-                                <input type="number"
-                                       name="item_{{ entry.item.id }}"
-                                       id="item_{{ entry.item.id }}"
-                                       value="{{ entry.quantidade }}"
-                                       min="0"
-                                       class="form-control form-control-sm text-center"
-                                       style="width: 70px;">
+                                {# Preço #}
+                                <p class="fw-semibold text-success mb-3">
+                                    R$ {{ entry.item.preco|floatformat:2 }}
+                                </p>
 
-                            </div>{# fim card-body #}
-                        </div>{# fim card #}
-                    </div>{# fim col #}
+                                {# Quantidade #}
+                                <div>
+                                    <label for="item_{{ entry.item.id }}"
+                                           class="form-label text-muted small mb-1">Quantidade</label>
+                                    <input type="number"
+                                           name="item_{{ entry.item.id }}"
+                                           id="item_{{ entry.item.id }}"
+                                           value="{{ entry.quantidade }}"
+                                           min="0"
+                                           class="form-control form-control-sm"
+                                           style="width: 90px;">
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
                 {% endfor %}
-            </div>{# fim row #}
+            </div>
 
-            <hr class="mt-4">
         {% endfor %}
 
     </div>{# fim pb-5 #}
 
     {# Rodapé fixo com botão de submit #}
     <div class="fixed-bottom bg-white border-top shadow-sm p-3 d-flex justify-content-end align-items-center">
-        <button type="submit" class="btn btn-success">
-            Criar Pedido
+        <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-cart3 me-1"></i>Criar Pedido
         </button>
     </div>
 

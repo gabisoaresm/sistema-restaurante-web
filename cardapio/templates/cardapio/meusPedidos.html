@@ -3,79 +3,115 @@
 {% block titulo %}Meus Pedidos{% endblock %}
 
 {% block conteudo %}
+
+{# Cabeçalho #}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Meus Pedidos</h2>
-    <a href="{% url 'cardapio:pedido-carrinho' %}" class="btn btn-success">+ Novo Pedido</a>
+    <div>
+        <h4 class="fw-semibold mb-0">
+            <i class="bi bi-bag-check text-success me-2"></i>Meus Pedidos
+        </h4>
+        <p class="text-muted small mb-0">Acompanhe o status dos seus pedidos</p>
+    </div>
+    <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg me-1"></i>Novo Pedido
+    </a>
 </div>
 
 {% for p in pedidos %}
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><strong>Pedido #{{ p.pedido.pk }}</strong> — {{ p.pedido.data_hora|date:"d/m/Y H:i" }}</span>
 
-        <!-- Badge de status com cor por etapa -->
-        {% if p.pedido.status == 'recebido' %}
-            <span class="badge bg-info text-dark">{{ p.pedido.get_status_display }}</span>
-        {% elif p.pedido.status == 'em_preparo' %}
-            <span class="badge bg-warning text-dark">{{ p.pedido.get_status_display }}</span>
-        {% elif p.pedido.status == 'pronto' %}
-            <span class="badge bg-success">{{ p.pedido.get_status_display }}</span>
-        {% elif p.pedido.status == 'entregue' %}
-            <span class="badge bg-secondary">{{ p.pedido.get_status_display }}</span>
-        {% endif %}
-    </div>
+<div class="card shadow-sm border-0 mb-3">
 
-    <div class="card-body">
-        <!-- Informações de pagamento -->
-        <div class="mb-3 d-flex align-items-center gap-3 flex-wrap">
-            {% if p.pedido.forma_pagamento %}
-                <span class="small text-muted">
-                    <strong>Pagamento:</strong> {{ p.pedido.get_forma_pagamento_display }}
-                </span>
+    {# Cabeçalho do pedido: número, data e status #}
+    <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-3 border-bottom">
+        <div>
+            <span class="fw-semibold">Pedido #{{ p.pedido.pk }}</span>
+            <span class="text-muted small ms-2">{{ p.pedido.data_hora|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {# Status do pedido — pastel subtle #}
+            {% if p.pedido.status == 'recebido' %}
+                <span class="badge bg-info-subtle text-info-emphasis fw-normal">{{ p.pedido.get_status_display }}</span>
+            {% elif p.pedido.status == 'em_preparo' %}
+                <span class="badge bg-warning-subtle text-warning-emphasis fw-normal">{{ p.pedido.get_status_display }}</span>
+            {% elif p.pedido.status == 'pronto' %}
+                <span class="badge bg-success-subtle text-success-emphasis fw-normal">{{ p.pedido.get_status_display }}</span>
+            {% elif p.pedido.status == 'entregue' %}
+                <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal">{{ p.pedido.get_status_display }}</span>
             {% endif %}
+            {# Status de pagamento — vivid #}
             {% if p.pedido.status_pagamento == 'pago' %}
-                <span class="badge bg-success">{{ p.pedido.get_status_pagamento_display }}</span>
+                <span class="badge text-bg-success">{{ p.pedido.get_status_pagamento_display }}</span>
             {% elif p.pedido.status_pagamento == 'pendente' %}
-                <span class="badge bg-warning text-dark">{{ p.pedido.get_status_pagamento_display }}</span>
+                <span class="badge text-bg-warning">{{ p.pedido.get_status_pagamento_display }}</span>
             {% elif p.pedido.status_pagamento == 'cancelado' %}
-                <span class="badge bg-danger">{{ p.pedido.get_status_pagamento_display }}</span>
+                <span class="badge text-bg-danger">{{ p.pedido.get_status_pagamento_display }}</span>
             {% endif %}
         </div>
+    </div>
 
-        {% if p.pedido.observacoes %}
-            <p class="text-muted mb-3"><em>Observações: {{ p.pedido.observacoes }}</em></p>
+    <div class="card-body p-4 pt-3">
+
+        {# Informações de pagamento #}
+        {% if p.pedido.forma_pagamento %}
+        <p class="text-muted small mb-3">
+            <i class="bi bi-credit-card me-1"></i>{{ p.pedido.get_forma_pagamento_display }}
+        </p>
         {% endif %}
 
-        <!-- Itens do pedido -->
-        <table class="table table-sm table-bordered mb-2">
-            <thead class="table-light">
-                <tr>
-                    <th>Item</th>
-                    <th class="text-center" style="width: 90px;">Qtd</th>
-                    <th class="text-end" style="width: 110px;">Preço unit.</th>
-                    <th class="text-end" style="width: 110px;">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entrada in p.itens %}
-                <tr>
-                    <td>{{ entrada.ip.item.nome }}</td>
-                    <td class="text-center">{{ entrada.ip.quantidade }}</td>
-                    <td class="text-end">R$ {{ entrada.ip.item.preco }}</td>
-                    <td class="text-end">R$ {{ entrada.subtotal }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr class="table-light fw-bold">
-                    <td colspan="3" class="text-end">Total:</td>
-                    <td class="text-end">R$ {{ p.total }}</td>
-                </tr>
-            </tfoot>
-        </table>
+        {# Observações #}
+        {% if p.pedido.observacoes %}
+        <p class="text-muted small mb-3">
+            <i class="bi bi-chat-left-text me-1"></i><em>{{ p.pedido.observacoes }}</em>
+        </p>
+        {% endif %}
+
+        {# Itens do pedido #}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light border-bottom">
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-center" style="width: 70px;">Qtd</th>
+                        <th class="text-end" style="width: 120px;">Preço unit.</th>
+                        <th class="text-end" style="width: 120px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entrada in p.itens %}
+                    <tr>
+                        <td class="fw-semibold">{{ entrada.ip.item.nome }}</td>
+                        <td class="text-center">{{ entrada.ip.quantidade }}</td>
+                        <td class="text-end text-muted small">R$ {{ entrada.ip.item.preco }}</td>
+                        <td class="text-end fw-semibold">R$ {{ entrada.subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light border-top">
+                    <tr>
+                        <td colspan="3" class="text-end fw-semibold">Total</td>
+                        <td class="text-end fw-semibold text-success">R$ {{ p.total }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
     </div>
 </div>
+
 {% empty %}
-<p class="text-muted">Você ainda não fez nenhum pedido. <a href="{% url 'cardapio:pedido-carrinho' %}">Fazer pedido agora</a>.</p>
+
+{# Estado vazio #}
+<div class="card shadow-sm border-0">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-bag fs-2 text-muted d-block mb-3"></i>
+        <p class="fw-semibold mb-1">Você ainda não fez nenhum pedido.</p>
+        <p class="text-muted small mb-3">Acesse o cardápio e escolha seus itens.</p>
+        <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success">
+            <i class="bi bi-grid me-1"></i>Fazer um pedido agora
+        </a>
+    </div>
+</div>
+
 {% endfor %}
+
 {% endblock %}
