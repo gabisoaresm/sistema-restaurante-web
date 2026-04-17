@@ -1,6 +1,6 @@
 {% extends 'cardapio/base.html' %}
 
-{% block titulo %}Restaurante — Home{% endblock %}
+{% block titulo %}Cucina Italiana — Home{% endblock %}
 
 {% block conteudo %}
 
@@ -10,7 +10,7 @@
     <div class="col-sm-10 col-md-7 col-lg-5 text-center">
 
         <i class="bi bi-shop fs-1 text-success"></i>
-        <h1 class="mt-3 fw-bold">Bem-vindo ao Restaurante</h1>
+        <h1 class="mt-3 fw-bold">Bem-vindo à Cucina Italiana</h1>
         <p class="lead text-muted mt-2">
             Faça login para acessar o cardápio, realizar pedidos e acompanhar o atendimento.
         </p>
@@ -105,7 +105,7 @@
             <div class="card-body d-flex flex-column p-4">
                 <i class="bi bi-grid fs-2 text-success mb-3"></i>
                 <h5 class="card-title fw-semibold">Cardápio</h5>
-                <p class="card-text text-muted flex-grow-1">Consulte os itens disponíveis no cardápio do restaurante.</p>
+                <p class="card-text text-muted flex-grow-1">Consulte os itens disponíveis no cardápio e crie seu pedido.</p>
                 <a href="{% url 'cardapio:cardapio-cliente' %}" class="btn btn-success mt-3">
                     Ver Cardápio
                 </a>
@@ -117,10 +117,10 @@
         <div class="card h-100 shadow-sm border-0">
             <div class="card-body d-flex flex-column p-4">
                 <i class="bi bi-cart3 fs-2 text-success mb-3"></i>
-                <h5 class="card-title fw-semibold">Novo Pedido</h5>
-                <p class="card-text text-muted flex-grow-1">Selecione itens do cardápio e faça um novo pedido.</p>
+                <h5 class="card-title fw-semibold">Pedido</h5>
+                <p class="card-text text-muted flex-grow-1">Revise os itens do seu pedido e realize o pagamento.</p>
                 <a href="{% url 'cardapio:pedido-carrinho' %}" class="btn btn-success mt-3">
-                    Fazer Pedido
+                    Ver Pedido
                 </a>
             </div>
         </div>

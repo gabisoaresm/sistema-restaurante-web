@@ -10,6 +10,7 @@
 
 from django.contrib import admin
 from django.urls import path, include, reverse_lazy
+from django.http import HttpResponse
 from django.contrib.auth.views import (
     LoginView, LogoutView,
     PasswordChangeView, PasswordChangeDoneView,
@@ -20,6 +21,9 @@ from django.contrib.auth.views import (
 from cardapio.views import RegistroView, LogoutConfirmView, PasswordResetView
 
 urlpatterns = [
+
+    # Suprime o 404 automático do browser ao buscar favicon
+    path('favicon.ico', lambda req: HttpResponse(status=204)),
 
     # Painel de administração do Django
     path('admin/', admin.site.urls),

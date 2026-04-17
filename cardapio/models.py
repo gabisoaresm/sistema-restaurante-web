@@ -69,9 +69,6 @@ class ItemCardapio(models.Model):
 class CartaoSalvo(models.Model):
     """
     Cartão de pagamento salvo pelo cliente para uso em pedidos futuros.
-    IMPORTANTE: o número completo do cartão NUNCA é salvo no banco —
-    apenas os últimos 4 dígitos (numero_mascarado).
-    O CVV é salvo para permitir validação no momento do pagamento simulado.
     """
 
     BANDEIRA_CHOICES = [

@@ -2,17 +2,19 @@
 # forms.py — Formulários do app cardapio.
 #
 # Cada formulário corresponde a uma operação do sistema:
-#   CategoriaForm      → criar/editar categorias do cardápio
-#   ItemCardapioForm   → criar/editar itens do cardápio
-#   PedidoForm         → campo de observações ao criar um pedido
-#   RegistroForm       → cadastro de novo usuário (sempre como cliente)
-#   PerfilUsuarioForm  → edição dos dados pessoais do usuário logado
+#   CategoriaForm            → criar/editar categorias do cardápio
+#   ItemCardapioForm         → criar/editar itens do cardápio
+#   PagamentoCartaoSalvoForm → selecionar cartão salvo e informar CVV no pagamento
+#   CartaoForm               → cadastrar novo cartão salvo pelo cliente
+#   RegistroForm             → cadastro de novo usuário (sempre como cliente)
+#   AlterarPerfilForm        → alterar o tipo de perfil de um usuário (gerente)
+#   PerfilUsuarioForm        → edição dos dados pessoais do usuário logado
 # =============================================================================
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Categoria, ItemCardapio, Pedido, CartaoSalvo
+from .models import Categoria, ItemCardapio, CartaoSalvo
 
 
 # ── Formulários do cardápio ───────────────────────────────────────────────────
@@ -36,27 +38,6 @@ class ItemCardapioForm(forms.ModelForm):
     class Meta:
         model = ItemCardapio
         fields = '__all__'
-
-
-# ── Formulários de pedido ─────────────────────────────────────────────────────
-
-class PedidoForm(forms.ModelForm):
-    """
-    Formulário para criação de pedido pelo cliente.
-    Expõe apenas o campo de observações — cliente, status e data_hora
-    são preenchidos automaticamente na view CriarPedidoView.
-    Os itens selecionados são lidos diretamente do POST (campos item_ID).
-    """
-    class Meta:
-        model = Pedido
-        fields = ['observacoes']
-        widgets = {
-            # Textarea menor para melhor layout na página de pedido
-            'observacoes': forms.Textarea(attrs={'rows': 3}),
-        }
-        labels = {
-            'observacoes': 'Observações (opcional)',
-        }
 
 
 # ── Formulário de pagamento com cartão salvo ─────────────────────────────────

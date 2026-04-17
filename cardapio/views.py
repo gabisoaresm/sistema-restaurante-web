@@ -17,13 +17,11 @@ from django.urls import reverse_lazy, reverse
 from django.contrib.auth.views import PasswordResetView as DjangoPasswordResetView
 from django.contrib.auth.forms import PasswordResetForm
 
-from django.db.models import Prefetch
-
 from django.contrib.auth.models import User
 from .models import Categoria, ItemCardapio, Perfil, Pedido, ItemPedido, CartaoSalvo
 from .forms import (
     CategoriaForm, ItemCardapioForm, RegistroForm,
-    PedidoForm, PerfilUsuarioForm, AlterarPerfilForm,
+    PerfilUsuarioForm, AlterarPerfilForm,
     CartaoForm, PagamentoCartaoSalvoForm,
 )
 
@@ -687,130 +685,6 @@ class PedidoConfirmadoView(LoginRequiredMixin, ClienteMixin, View):
             'total':             total,
         })
 
-
-# ──────────────────────────────────────────────
-# Pedidos do cliente — fluxo legado (mantido para referência)
-# ──────────────────────────────────────────────
-
-class CriarPedidoView(LoginRequiredMixin, ClienteMixin, View):
-    """
-    Exibe os itens disponíveis agrupados por categoria e formulário de pagamento (GET).
-    Cria o Pedido SOMENTE se o pagamento for confirmado via cartão (POST).
-
-    Cartão: POST com pagar_cartao — valida CVV do cartão salvo.
-
-    Acesso: cliente. Template: criarPedido.html.
-    """
-
-    def _carregar_categorias(self):
-        """Retorna categorias com itens disponíveis pré-carregados (evita N+1 queries)."""
-        return Categoria.objects.prefetch_related(
-            Prefetch(
-                'itemcardapio_set',
-                queryset=ItemCardapio.objects.filter(disponivel=True),
-                to_attr='itens_disponiveis',
-            )
-        )
-
-    def _form_cartao_salvo(self, request, data=None):
-        """Cria PagamentoCartaoSalvoForm com queryset filtrado para o usuário logado."""
-        form = PagamentoCartaoSalvoForm(data)
-        form.fields['cartao'].queryset = CartaoSalvo.objects.filter(usuario=request.user)
-        return form
-
-    def get(self, request):
-        return render(request, 'cardapio/criarPedido.html', {
-            'categorias':      self._carregar_categorias(),
-            'formulario':      PedidoForm(),
-            'form_cartao_salvo': self._form_cartao_salvo(request),
-            'cartoes_usuario': CartaoSalvo.objects.filter(usuario=request.user),
-        })
-
-    def post(self, request):
-        formulario   = PedidoForm(request.POST)
-        form_cartao  = self._form_cartao_salvo(request, data=request.POST)
-
-        # Coleta os itens selecionados: campos cujo nome começa com "item_"
-        itens_pedido = []
-        for chave, valor in request.POST.items():
-            if chave.startswith('item_'):
-                try:
-                    item_id   = int(chave[5:])   # remove o prefixo "item_"
-                    quantidade = int(valor)
-                    if quantidade > 0:
-                        item = ItemCardapio.objects.get(pk=item_id, disponivel=True)
-                        itens_pedido.append((item, quantidade))
-                except (ValueError, ItemCardapio.DoesNotExist):
-                    pass  # ignora campos inválidos ou itens indisponíveis
-
-        # Identifica se a ação de pagamento via cartão foi disparada
-        pagar_cartao = 'pagar_cartao' in request.POST
-
-        def reexibir(erro=None, erro_cvv=None, abrir_cartao=False):
-            """Reexibe o formulário de pedido mantendo os dados e exibindo mensagens."""
-            ctx = {
-                'categorias':        self._carregar_categorias(),
-                'formulario':        formulario,
-                'form_cartao_salvo': form_cartao,
-                'cartoes_usuario':   CartaoSalvo.objects.filter(usuario=request.user),
-                'erro':              erro,
-                'erro_cvv':          erro_cvv,
-                'abrir_cartao':      abrir_cartao,
-            }
-            return render(request, 'cardapio/criarPedido.html', ctx)
-
-        # Valida: pelo menos um item deve ser selecionado
-        if not itens_pedido:
-            return reexibir(erro='Selecione pelo menos um item com quantidade maior que zero.')
-
-        # Valida o formulário de observações
-        if not formulario.is_valid():
-            return reexibir(abrir_cartao=pagar_cartao)
-
-        # ── Pagamento via Cartão Salvo ────────────────────────────────────────
-        if pagar_cartao:
-            if not form_cartao.is_valid():
-                return reexibir(abrir_cartao=True)
-
-            cartao       = form_cartao.cleaned_data['cartao']
-            cvv_digitado = form_cartao.cleaned_data['cvv']
-
-            # Segurança: garante que o cartão pertence ao usuário logado
-            if cartao.usuario != request.user:
-                return reexibir(erro_cvv='Cartão inválido.', abrir_cartao=True)
-
-            # Verifica se o CVV digitado corresponde ao CVV salvo no cartão
-            if cartao.cvv != cvv_digitado:
-                return reexibir(
-                    erro_cvv='CVV incorreto. Verifique o código de segurança do cartão.',
-                    abrir_cartao=True,
-                )
-
-            # Determina forma_pagamento conforme o tipo do cartão (crédito ou débito)
-            forma = 'cartao_credito' if cartao.tipo == 'credito' else 'cartao_debito'
-
-            pedido = Pedido.objects.create(
-                cliente=request.user,
-                status='recebido',
-                observacoes=formulario.cleaned_data.get('observacoes') or '',
-                forma_pagamento=forma,
-                status_pagamento='pago',
-                cartao_utilizado=cartao,
-            )
-            for item, quantidade in itens_pedido:
-                ItemPedido.objects.create(pedido=pedido, item=item, quantidade=quantidade)
-
-            total = sum(quantidade * item.preco for item, quantidade in itens_pedido)
-
-            return render(request, 'cardapio/pagamentoConfirmado.html', {
-                'pedido': pedido,
-                'total':  total,
-            })
-
-        # Nenhum botão de pagamento reconhecido — reexibe o formulário com aviso
-        return reexibir(
-            erro='Selecione uma forma de pagamento para confirmar o pedido.',
-        )
 
 
 class MeusPedidosView(LoginRequiredMixin, ClienteMixin, View):

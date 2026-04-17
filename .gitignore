@@ -7,3 +7,6 @@ db.sqlite3
 # Cache do Python
 __pycache__/
 *.pyc
+
+# Variáveis de ambiente (credenciais e configurações sensíveis)
+.env

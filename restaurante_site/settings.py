@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Carrega as variáveis do arquivo .env (apenas em desenvolvimento local)
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -123,6 +128,22 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'cardapio:redirecionar-apos-login'  # redireciona conforme o perfil do usuário
 LOGOUT_REDIRECT_URL = 'login'
 
-# Configuração de e-mail via console
-# O e-mail de recuperação de senha aparece no terminal onde o servidor está rodando
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Tipo de backend de e-mail definido pela variável de ambiente EMAIL_BACKEND_TIPO
+# 'console' → exibe o e-mail no terminal 
+# 'gmail'   → envia e-mail real via Gmail SMTP 
+EMAIL_BACKEND_TIPO = os.environ.get('EMAIL_BACKEND_TIPO')
+
+if EMAIL_BACKEND_TIPO == 'gmail':
+    # Configurações para envio real via Gmail em produção
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+else:
+    # Configurações para desenvolvimento local — e-mail aparece no terminal
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    EMAIL_HOST_USER = ''
+    EMAIL_HOST_PASSWORD = ''

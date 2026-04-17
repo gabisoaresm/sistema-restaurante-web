@@ -14,7 +14,7 @@ from .views import (
     ItemCardapioListView, ItemCardapioCreateView, ItemCardapioUpdateView, ItemCardapioDeleteView,
     CardapioClienteView,
     PedidoCarrinhoView, PedidoConfirmadoView,
-    CriarPedidoView, MeusPedidosView,
+    MeusPedidosView,
     FilaPedidosView, AtualizarStatusPedidoView, PainelGerenteView,
     PerfilView,
     GerenciarUsuariosView, AlterarPerfilUsuarioView,
@@ -60,10 +60,7 @@ urlpatterns = [
     path('pedido/', PedidoCarrinhoView.as_view(), name='pedido-carrinho'),
     path('pedido/confirmado/<int:pk>/', PedidoConfirmadoView.as_view(), name='pedido-confirmado'),
     path('pedidos/meus/', MeusPedidosView.as_view(), name='meus-pedidos'),
-    # Fluxo legado (mantido para referência; não exposto na navegação do cliente)
-    path('pedidos/novo/', CriarPedidoView.as_view(), name='criar-pedido'),
-
-    # ── Fila e gestão de pedidos (atendente e gerente) ───────────────────────
+# ── Fila e gestão de pedidos (atendente e gerente) ───────────────────────
     path('pedidos/fila/', FilaPedidosView.as_view(), name='fila-pedidos'),
     path('pedidos/status/<int:pk>/', AtualizarStatusPedidoView.as_view(), name='atualizar-status'),
     path('pedidos/painel/', PainelGerenteView.as_view(), name='painel-gerente'),
