@@ -313,4 +313,4 @@ Recebido → Em Preparo → Pronto → Entregue
 
 ## Link do Site Publicado
 
-> [Link do site será adicionado após o deploy]
+https://cucinaitaliana.pythonanywhere.com/
